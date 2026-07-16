@@ -234,4 +234,4 @@ class MyFileList {
 
 ## Contributing
 
-Open an issue or pull request in the [select-list repository](https://github.com/lumine-code/select-list).
+Got ideas to make this package better, found a bug, or want to help add new features? Just drop your thoughts on GitHub. Any feedback is welcome!
