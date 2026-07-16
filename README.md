@@ -1,8 +1,8 @@
-# select-list
+# @lumine-code/select-list
 
-Fuzzy-searchable select list component for Lumine. An [etch component](https://github.com/atom/etch) with keyboard/mouse navigation and built-in panel management.
+A fuzzy-searchable select-list component for Lumine packages.
 
-Fork of [atom-select-list](https://github.com/atom/atom-select-list). Designed exclusively for use in Lumine packages.
+This CommonJS [etch component](https://github.com/atom/etch) provides keyboard and mouse navigation with built-in panel management. It is derived from [atom-select-list](https://github.com/atom/atom-select-list) and is maintained for Lumine's editor runtime.
 
 ## Features
 
@@ -12,6 +12,12 @@ Fork of [atom-select-list](https://github.com/atom/atom-select-list). Designed e
 - **Lazy match indices**: Match positions computed only when accessed.
 - **Diacritics support**: Accent-insensitive matching option.
 - **Help mode**: Toggle help content in the panel.
+
+## Installation
+
+```sh
+npm install @lumine-code/select-list
+```
 
 ## API
 
@@ -139,7 +145,7 @@ Initializes the etch scheduler from `atom.views` if it has not already been conf
 Computes fuzzy match indices for a text against a query. Useful outside of `elementForItem` context.
 
 ```js
-const { getMatchIndices } = require("select-list");
+const { getMatchIndices } = require("@lumine-code/select-list");
 
 const indices = getMatchIndices("MyComponent.js", "mcjs");
 // => [0, 2, 11, 12] or null if no match
@@ -187,7 +193,7 @@ elementForItem: (item, { filterKey, matchIndices }) => {
 ## Example
 
 ```js
-const SelectListView = require("select-list");
+const SelectListView = require("@lumine-code/select-list");
 const fs = require("fs");
 const path = require("path");
 
@@ -228,4 +234,4 @@ class MyFileList {
 
 ## Contributing
 
-Got ideas to make this package better, found a bug, or want to help add new features? Just drop your thoughts on GitHub. Any feedback is welcome!
+Open an issue or pull request in the [select-list repository](https://github.com/lumine-code/select-list).
