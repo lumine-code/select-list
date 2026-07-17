@@ -12,6 +12,7 @@ This CommonJS [etch component](https://github.com/atom/etch) provides keyboard a
 - **Lazy match indices**: Match positions computed only when accessed.
 - **Diacritics support**: Accent-insensitive matching option.
 - **Help mode**: Toggle help content in the panel.
+- **Dialog base**: `InputDialogView` exposes the modal panel, query editor, and focus behavior for dialogs that are not lists.
 
 ## Installation
 
@@ -60,6 +61,7 @@ When creating a new instance of a select list, or when calling `update` on an ex
 - `loadingSpinner: Boolean`: show spinner next to loading message.
 - `loadingBadge: String/Number`: a string or number that needs to be set when the progress status changes.
 - `itemsClassList: [String]`: an array of strings that will be added as class names to the items element.
+- `contentElement: HTMLElement`: a caller-owned DOM element rendered below the list and messages. Interactive elements inside it (`input`, `textarea`, `select`, `button`, `a[href]`, `[tabindex]`, `atom-text-editor`) can receive focus and clicks; anywhere else keeps focus in the query editor. Hidden while help is displayed.
 - `initialSelectionIndex: Number`: the index of the item to initially select; defaults to `0`.
 - `initiallyVisibleItemCount: Number`: render only the first N items eagerly; items beyond that count get `visible: false` in `elementForItem` and are re-rendered when scrolled into view (via `IntersectionObserver`). Useful for very long lists with expensive item rendering. Constructor-only — cannot be changed via `update`.
 - `placeholderText: String`: placeholder text to display in the query editor when empty.
@@ -75,6 +77,8 @@ By default, the component registers these commands on its element:
 - `core:confirm`: Confirm selection
 - `core:cancel`: Cancel selection
 - `select-list:help`: Toggle help message visibility (requires `helpMessage` or `helpMarkdown`)
+
+The `` ` `` key in the query editor also toggles help, but only when `helpMessage` or `helpMarkdown` is set; otherwise it types normally.
 
 #### Callbacks
 
@@ -228,6 +232,61 @@ class MyFileList {
 
   destroy() {
     this.selectList.destroy();
+  }
+}
+```
+
+## InputDialogView
+
+`InputDialogView` is the base class of `SelectListView`. It is a modal panel with a mini query editor and no list semantics — use it for dialogs where the query is the value (prompts, save dialogs) and host any extra body through `contentElement`. Its root element carries the `input-dialog` class instead of `select-list`.
+
+### Constructor props
+
+- `className: String`: CSS class name(s) to add to the dialog element.
+- `placeholderText: String`: placeholder text for the query editor.
+- `contentElement: HTMLElement`: a caller-owned DOM element rendered below the messages (see the description above).
+- `query: String` / `selectQuery: Boolean`: control the query editor content and selection via `update`.
+- `filterQuery: (query: String) -> String`: a transformation applied to the query before it is passed to `didChangeQuery`.
+- `emptyMessage` is not supported (there is no list); `infoMessage`, `errorMessage`, `loadingMessage`, `loadingSpinner`, `loadingBadge`, `helpMessage`, and `helpMarkdown` behave as on `SelectListView`.
+- `panelItem`, `skipCommandsRegistration`: as on `SelectListView`.
+
+### Callbacks
+
+- `didChangeQuery: (query: String) -> Void`: called when the query changes.
+- `didConfirm: (query: String) -> Void`: called on `core:confirm` with the raw query text.
+- `didCancel: () -> Void`: called on `core:cancel` or when focus leaves the dialog.
+- `willShow: () -> Void`: called when transitioning from hidden to visible.
+
+### Methods
+
+Panel and query management match `SelectListView`: `show()`, `hide()`, `toggle()`, `isVisible()`, `getPanel()`, `focus()`, `reset()`, `destroy()`, `update(props)`, `getQuery()`, `getFilterQuery()`, `setQueryFromSelection()`, plus `confirm()` and `cancel()` to trigger the callbacks programmatically. `refs.queryEditor` exposes the underlying `TextEditor`.
+
+### Dialog example
+
+```js
+const { InputDialogView } = require("@lumine-code/select-list");
+
+class NameDialog {
+  constructor() {
+    this.body = document.createElement("div");
+    this.body.classList.add("my-package-dialog-body");
+
+    this.dialog = new InputDialogView({
+      className: "my-package name-dialog",
+      contentElement: this.body,
+      placeholderText: "New name",
+      didConfirm: (name) => this.confirm(name),
+      didCancel: () => this.dialog.hide(),
+    });
+  }
+
+  confirm(name) {
+    if (!name.trim()) {
+      this.dialog.update({ errorMessage: "Enter a name." });
+      return;
+    }
+    this.onConfirm?.(name.trim());
+    this.dialog.hide();
   }
 }
 ```

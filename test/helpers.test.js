@@ -54,7 +54,7 @@ Module._load = function load(request, parent, isMain) {
 
 let selectList;
 try {
-  selectList = require("../lib/select");
+  selectList = require("../lib/select-list");
 } finally {
   Module._load = originalLoad;
 }
@@ -68,6 +68,11 @@ test.after(() => {
 test("preserves the CommonJS default and named class exports", () => {
   assert.equal(selectList, selectList.SelectListView);
   assert.equal(typeof selectList.SelectListView, "function");
+  assert.equal(typeof selectList.InputDialogView, "function");
+  assert.equal(
+    Object.getPrototypeOf(selectList.SelectListView),
+    selectList.InputDialogView,
+  );
 });
 
 test("removes diacritics", () => {

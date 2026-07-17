@@ -1,6 +1,6 @@
 {
   "name": "@lumine-code/select-list",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "A fuzzy-searchable select-list component for Lumine packages.",
   "author": "lumine-code",
   "keywords": [
@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/lumine-code/select-list#readme",
   "license": "MIT",
-  "main": "lib/select.js",
+  "main": "lib/select-list.js",
   "files": [
     "lib",
     "LICENSE",
@@ -31,7 +31,7 @@
   },
   "scripts": {
     "test": "npm run test:syntax && node --test test/helpers.test.js",
-    "test:syntax": "node --check lib/select.js"
+    "test:syntax": "node --check lib/select-list.js && node --check lib/input-dialog.js"
   },
   "dependencies": {
     "diacritic": "^0.0.2",

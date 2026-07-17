@@ -3,7 +3,7 @@ const {
   highlightMatches,
   getMatchIndices,
   createTwoLineItem,
-} = require("../lib/select");
+} = require("../lib/select-list");
 
 describe("SelectListView", () => {
   let view;
@@ -286,6 +286,41 @@ describe("SelectListView", () => {
       expect(view.refs.infoMessage.textContent).toBe("fyi");
       expect(view.refs.loadingMessage.textContent).toBe("wait");
     });
+  });
+
+  describe("contentElement", () => {
+    it("renders the content element inside the panel and preserves it across updates", async () => {
+      const content = document.createElement("div");
+      content.className = "custom-content";
+      view = textItemView({ contentElement: content });
+      expect(view.element.contains(content)).toBe(true);
+
+      view.refs.queryEditor.setText("tw");
+      await nextUpdate();
+      expect(view.element.contains(content)).toBe(true);
+
+      const replacement = document.createElement("div");
+      await view.update({ contentElement: replacement });
+      expect(view.element.contains(content)).toBe(false);
+      expect(view.element.contains(replacement)).toBe(true);
+    });
+
+    it("supports dialog-style views with no items", () => {
+      const content = document.createElement("div");
+      content.textContent = "dialog body";
+      let confirmedEmpty = false;
+      view = new SelectListView({
+        items: [],
+        contentElement: content,
+        didConfirmEmptySelection: () => (confirmedEmpty = true),
+      });
+      expect(view.element.contains(content)).toBe(true);
+      expect(view.element.querySelector("li")).toBeNull();
+
+      view.confirmSelection();
+      expect(confirmedEmpty).toBe(true);
+    });
+
   });
 
   describe("helpers", () => {
