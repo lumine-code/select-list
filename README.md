@@ -244,17 +244,21 @@ class MyFileList {
 
 ## InputDialogView
 
-`InputDialogView` is the base class of `SelectListView`. It is a modal panel with a mini query editor and no list semantics — use it for dialogs where the query is the value (prompts, save dialogs) and host any extra body through `contentElement`. Its root element carries the `input-dialog` class instead of `select-list`.
+`InputDialogView` is the base class of `SelectListView`. It is a modal panel with a mini query editor and no list semantics — use it for dialogs where the query is the value (prompts, save dialogs) and host any extra DOM through `headerElement`, `contentElement`, or `checkboxes`. Its root element carries the `input-dialog` class instead of `select-list`.
 
 ### Constructor props
 
 - `className: String`: CSS class name(s) to add to the dialog element.
 - `placeholderText: String`: placeholder text for the query editor.
-- `contentElement: HTMLElement`: a caller-owned DOM element rendered below the messages (see the description above).
+- `headerElement: HTMLElement`: a caller-owned DOM element rendered **above** the query editor (e.g. an icon prompt label).
+- `contentElement: HTMLElement`: a caller-owned DOM element rendered **below** the messages.
+- `checkboxes: [{ label, config?, checked?, onChange? }]`: a row of checkboxes rendered below the messages. A checkbox with a `config` key is bound to `atom.config`: it reflects the current value, writes on toggle (propagating to every renderer), and re-renders on external change. Without `config` it keeps local state seeded from `checked`. `onChange(checked)` is called on every toggle. Toggling returns focus to the query editor so Enter still confirms.
 - `query: String` / `selectQuery: Boolean`: control the query editor content and selection via `update`.
 - `filterQuery: (query: String) -> String`: a transformation applied to the query before it is passed to `didChangeQuery`.
 - `emptyMessage` is not supported (there is no list); `infoMessage`, `errorMessage`, `loadingMessage`, `loadingSpinner`, `loadingBadge`, `helpMessage`, and `helpMarkdown` behave as on `SelectListView`.
 - `panelItem`, `skipCommandsRegistration`: as on `SelectListView`.
+
+Interactive controls anywhere in the dialog (checkboxes, buttons, links, inputs inside `contentElement`) receive focus and clicks normally; clicking non-interactive chrome keeps focus in the query editor.
 
 ### Callbacks
 

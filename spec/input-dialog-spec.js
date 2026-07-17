@@ -46,6 +46,76 @@ describe("InputDialogView", () => {
       expect(view.refs.infoMessage.textContent).toBe("fyi");
       expect(view.refs.loadingMessage.textContent).toBe("wait");
     });
+
+    it("renders a header element above the query editor", () => {
+      const header = document.createElement("label");
+      header.textContent = "Prompt";
+      view = new InputDialogView({ headerElement: header });
+      const children = Array.from(view.element.children);
+      const headerIndex = children.indexOf(header);
+      const editorIndex = children.findIndex((child) =>
+        child.contains(view.refs.queryEditor.element),
+      );
+      expect(headerIndex).toBe(0);
+      expect(headerIndex).toBeLessThan(editorIndex);
+    });
+  });
+
+  describe("checkboxes", () => {
+    const CONFIG_KEY = "input-dialog-spec.flag";
+
+    afterEach(() => {
+      atom.config.unset(CONFIG_KEY);
+    });
+
+    it("reflects the bound config value and updates it on toggle", () => {
+      atom.config.set(CONFIG_KEY, true);
+      view = new InputDialogView({
+        checkboxes: [{ label: "Do the thing", config: CONFIG_KEY }],
+      });
+      const input = view.element.querySelector(".input-checkbox");
+      expect(input.checked).toBe(true);
+      expect(view.element.querySelector(".input-label-text").textContent).toBe("Do the thing");
+
+      input.checked = false;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      expect(atom.config.get(CONFIG_KEY)).toBe(false);
+    });
+
+    it("re-renders when the bound config changes externally", async () => {
+      atom.config.set(CONFIG_KEY, false);
+      view = new InputDialogView({
+        checkboxes: [{ label: "Flag", config: CONFIG_KEY }],
+      });
+      expect(view.element.querySelector(".input-checkbox").checked).toBe(false);
+
+      atom.config.set(CONFIG_KEY, true);
+      await InputDialogView.getScheduler().getNextUpdatePromise();
+      expect(view.element.querySelector(".input-checkbox").checked).toBe(true);
+    });
+
+    it("keeps local state and calls onChange for unbound checkboxes", () => {
+      const changes = [];
+      view = new InputDialogView({
+        checkboxes: [{ label: "Local", checked: false, onChange: (c) => changes.push(c) }],
+      });
+      const input = view.element.querySelector(".input-checkbox");
+      expect(input.checked).toBe(false);
+
+      input.checked = true;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      expect(changes).toEqual([true]);
+      expect(view.localCheckboxState.get(0)).toBe(true);
+    });
+
+    it("returns focus to the query editor after a toggle so Enter still confirms", () => {
+      view = new InputDialogView({ checkboxes: [{ label: "Flag", checked: false }] });
+      view.show();
+      const input = view.element.querySelector(".input-checkbox");
+      input.checked = true;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      expect(view.refs.queryEditor.element.contains(document.activeElement)).toBe(true);
+    });
   });
 
   describe("confirm and cancel", () => {
