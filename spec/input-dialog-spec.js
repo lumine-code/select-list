@@ -127,6 +127,21 @@ describe("InputDialogView", () => {
       input.focus();
       expect(document.activeElement).toBe(input);
     });
+
+    it("does not refocus when focus moves into the query editor's own subtree", () => {
+      // Refocusing here would re-fire focusout and recurse (RangeError). The
+      // guard skips the refocus when the new focus target is inside the editor.
+      view = new InputDialogView({});
+      view.show();
+      const editorElement = view.refs.queryEditor.element;
+      const inner = editorElement.querySelector("input") || editorElement;
+      spyOn(editorElement, "focus");
+
+      const event = new FocusEvent("focusout", { bubbles: true, relatedTarget: inner });
+      view.element.dispatchEvent(event);
+
+      expect(editorElement.focus).not.toHaveBeenCalled();
+    });
   });
 
   describe("help toggling via backtick", () => {
