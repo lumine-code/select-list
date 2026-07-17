@@ -65,8 +65,7 @@ test.after(() => {
   delete global.document;
 });
 
-test("preserves the CommonJS default and named class exports", () => {
-  assert.equal(selectList, selectList.SelectListView);
+test("exposes the named class exports", () => {
   assert.equal(typeof selectList.SelectListView, "function");
   assert.equal(typeof selectList.InputDialogView, "function");
   assert.equal(

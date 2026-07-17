@@ -144,7 +144,11 @@ Returns the current etch scheduler.
 
 Initializes the etch scheduler from `atom.views` if it has not already been configured.
 
-#### `SelectListView.getMatchIndices(text, query, options)`
+### Helper exports
+
+The package exports these standalone helpers alongside the classes; destructure them from the module.
+
+#### `getMatchIndices(text, query, options)`
 
 Computes fuzzy match indices for a text against a query. Useful outside of `elementForItem` context.
 
@@ -159,35 +163,37 @@ const indices = getMatchIndices("café", "cafe", { removeDiacritics: true });
 // => [0, 1, 2, 3]
 ```
 
-#### `SelectListView.highlightMatches(text, matchIndices, options)`
+#### `highlightMatches(text, matchIndices, options)`
 
 Creates a DocumentFragment with highlighted match characters.
 
 ```js
+const { highlightMatches } = require("@lumine-code/select-list");
+
 // In elementForItem, use options.matchIndices (lazy getter):
 elementForItem: (item, { filterKey, matchIndices }) => {
   const li = document.createElement("li");
-  li.appendChild(SelectListView.highlightMatches(filterKey, matchIndices));
+  li.appendChild(highlightMatches(filterKey, matchIndices));
   return li;
 };
 ```
 
-#### `SelectListView.removeDiacritics(str)`
+#### `removeDiacritics(str)`
 
 Removes diacritical marks (accents) from a string.
 
 ```js
-SelectListView.removeDiacritics("café"); // => 'cafe'
+removeDiacritics("café"); // => 'cafe'
 ```
 
-#### `SelectListView.createTwoLineItem(options)`
+#### `createTwoLineItem(options)`
 
 Creates a two-line list item element with primary and optional secondary lines.
 
 ```js
 elementForItem: (item, { filterKey, matchIndices }) => {
-  return SelectListView.createTwoLineItem({
-    primary: SelectListView.highlightMatches(filterKey, matchIndices),
+  return createTwoLineItem({
+    primary: highlightMatches(filterKey, matchIndices),
     secondary: item.description,
     icon: ["icon-file-text"],
   });
@@ -197,7 +203,7 @@ elementForItem: (item, { filterKey, matchIndices }) => {
 ## Example
 
 ```js
-const SelectListView = require("@lumine-code/select-list");
+const { SelectListView, highlightMatches } = require("@lumine-code/select-list");
 const fs = require("fs");
 const path = require("path");
 
@@ -213,7 +219,7 @@ class MyFileList {
       },
       elementForItem: (item, { index, filterKey, matchIndices }) => {
         const li = document.createElement("li");
-        li.appendChild(SelectListView.highlightMatches(filterKey, matchIndices));
+        li.appendChild(highlightMatches(filterKey, matchIndices));
         return li;
       },
       didConfirmSelection: (item) => {

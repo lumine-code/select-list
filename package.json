@@ -1,6 +1,6 @@
 {
   "name": "@lumine-code/select-list",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "A fuzzy-searchable select-list component for Lumine packages.",
   "author": "lumine-code",
   "keywords": [
