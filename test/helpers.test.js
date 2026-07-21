@@ -42,7 +42,7 @@ Module._load = function load(request, parent, isMain) {
   if (request === "atom") {
     return { Disposable, CompositeDisposable, TextEditor };
   }
-  if (request === "etch") {
+  if (request === "@lumine-code/etch") {
     return {
       dom() {},
       getScheduler() {},

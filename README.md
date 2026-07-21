@@ -2,7 +2,7 @@
 
 A fuzzy-searchable select-list component for Lumine packages.
 
-This CommonJS [etch component](https://github.com/atom/etch) provides keyboard and mouse navigation with built-in panel management. It is derived from [atom-select-list](https://github.com/atom/atom-select-list) and is maintained for Lumine's editor runtime.
+This CommonJS [etch component](https://github.com/lumine-code/etch) provides keyboard and mouse navigation with built-in panel management. It is derived from [atom-select-list](https://github.com/atom/atom-select-list) and is maintained for Lumine's editor runtime.
 
 ## Features
 
