@@ -4,12 +4,12 @@
   "description": "Provides a fuzzy-searchable select-list and modal panel component.",
   "author": "lumine-code",
   "keywords": [
-    "lumine",
-    "select",
-    "list",
+    "select-list",
     "fuzzy",
     "filter",
-    "ui"
+    "modal",
+    "panel",
+    "lumine"
   ],
   "repository": {
     "type": "git",
