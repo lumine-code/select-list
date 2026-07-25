@@ -1,7 +1,7 @@
 {
   "name": "@lumine-code/select-list",
   "version": "3.1.0",
-  "description": "A fuzzy-searchable select-list component for Lumine packages.",
+  "description": "Provides a fuzzy-searchable select-list and modal panel component.",
   "author": "lumine-code",
   "keywords": [
     "lumine",
