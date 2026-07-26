@@ -3,6 +3,7 @@ const {
   highlightMatches,
   getMatchIndices,
   createTwoLineItem,
+  createTrailingBlock,
 } = require("../lib/select-list");
 
 describe("SelectListView", () => {
@@ -346,6 +347,61 @@ describe("SelectListView", () => {
       expect(li.querySelector(".primary-line").classList.contains("icon-file")).toBe(true);
       expect(li.querySelector(".primary-text").textContent).toBe("top");
       expect(li.querySelector(".secondary-line").textContent).toBe("bottom");
+    });
+
+    it("createTwoLineItem omits two-lines when there is no secondary line", () => {
+      const li = createTwoLineItem({ primary: "top" });
+      expect(li.classList.contains("two-lines")).toBe(false);
+      expect(li.querySelector(".secondary-line")).toBeNull();
+
+      const empty = createTwoLineItem({ primary: "top", secondary: "" });
+      expect(empty.classList.contains("two-lines")).toBe(true);
+      expect(empty.querySelector(".secondary-line").textContent).toBe("");
+    });
+
+    it("createTwoLineItem applies className as a string or an array", () => {
+      const fromString = createTwoLineItem({ primary: "top", className: "alpha beta" });
+      expect(fromString.classList.contains("alpha")).toBe(true);
+      expect(fromString.classList.contains("beta")).toBe(true);
+
+      const fromArray = createTwoLineItem({ primary: "top", className: ["alpha", "beta"] });
+      expect(fromArray.classList.contains("alpha")).toBe(true);
+      expect(fromArray.classList.contains("beta")).toBe(true);
+    });
+
+    it("createTwoLineItem renders trailing nodes and descriptors, skipping falsy entries", () => {
+      const node = document.createElement("span");
+      node.textContent = "node";
+      const li = createTwoLineItem({
+        primary: "top",
+        trailing: [null, { text: "+3", className: "status-added" }, false, node],
+      });
+
+      const block = li.querySelector(".primary-line .trailing-block");
+      expect(block.children.length).toBe(2);
+      expect(block.children[0].textContent).toBe("+3");
+      expect(block.children[0].classList.contains("status-added")).toBe(true);
+      expect(block.children[1]).toBe(node);
+    });
+
+    it("createTwoLineItem emits no trailing block when there is nothing to show", () => {
+      expect(createTwoLineItem({ primary: "top" }).querySelector(".trailing-block")).toBeNull();
+      expect(
+        createTwoLineItem({ primary: "top", trailing: [] }).querySelector(".trailing-block"),
+      ).toBeNull();
+      expect(
+        createTwoLineItem({ primary: "top", trailing: [null, false] }).querySelector(
+          ".trailing-block",
+        ),
+      ).toBeNull();
+    });
+
+    it("createTrailingBlock accepts a lone node and returns null when empty", () => {
+      const node = document.createElement("span");
+      const block = createTrailingBlock(node);
+      expect(block.classList.contains("trailing-block")).toBe(true);
+      expect(block.children[0]).toBe(node);
+      expect(createTrailingBlock([])).toBeNull();
     });
   });
 });

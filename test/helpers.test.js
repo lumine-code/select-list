@@ -106,3 +106,49 @@ test("creates two-line items with icon classes", () => {
   assert.equal(item.querySelector(".secondary-line").textContent, "Secondary");
   assert.equal(item.querySelector(".primary-line").classList.contains("icon-file"), true);
 });
+
+test("marks an item as two-lines only when it has a secondary line", () => {
+  const single = selectList.createTwoLineItem({ primary: "Primary" });
+  assert.equal(single.classList.contains("two-lines"), false);
+  assert.equal(single.querySelector(".secondary-line"), null);
+
+  const double = selectList.createTwoLineItem({ primary: "Primary", secondary: "" });
+  assert.equal(double.classList.contains("two-lines"), true);
+});
+
+test("adds item class names from a string or an array", () => {
+  const fromString = selectList.createTwoLineItem({ primary: "Primary", className: "alpha beta" });
+  assert.equal(fromString.classList.contains("alpha"), true);
+  assert.equal(fromString.classList.contains("beta"), true);
+
+  const fromArray = selectList.createTwoLineItem({
+    primary: "Primary",
+    className: ["alpha", "beta"],
+  });
+  assert.equal(fromArray.classList.contains("alpha"), true);
+  assert.equal(fromArray.classList.contains("beta"), true);
+});
+
+test("renders trailing content and skips falsy entries", () => {
+  const node = document.createElement("span");
+  node.textContent = "node";
+  const item = selectList.createTwoLineItem({
+    primary: "Primary",
+    trailing: [null, { text: "+3", className: "status-added" }, false, node],
+  });
+
+  const block = item.querySelector(".primary-line .trailing-block");
+  assert.equal(block.children.length, 2);
+  assert.equal(block.children[0].textContent, "+3");
+  assert.equal(block.children[0].classList.contains("status-added"), true);
+  assert.equal(block.children[1], node);
+});
+
+test("omits the trailing block when there is nothing to show", () => {
+  for (const trailing of [undefined, [], [null, false]]) {
+    const item = selectList.createTwoLineItem({ primary: "Primary", trailing });
+    assert.equal(item.querySelector(".trailing-block"), null);
+  }
+
+  assert.equal(selectList.createTrailingBlock([]), null);
+});

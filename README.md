@@ -188,7 +188,9 @@ removeDiacritics("café"); // => 'cafe'
 
 #### `createTwoLineItem(options)`
 
-Creates a two-line list item element with primary and optional secondary lines.
+Creates a list item element with a primary line and an optional secondary line.
+The `two-lines` class is applied only when there is a secondary line, so the same
+helper builds both one- and two-line rows.
 
 ```js
 elementForItem: (item, { filterKey, matchIndices }) => {
@@ -199,6 +201,29 @@ elementForItem: (item, { filterKey, matchIndices }) => {
   });
 };
 ```
+
+`className` adds class names to the item itself, and `trailing` fills a right-hand
+block on the primary line. Trailing entries are DOM nodes, `{text, className}`
+descriptors, or falsy values that are skipped, so conditional content stays inline:
+
+```js
+elementForItem: (item, { filterKey, matchIndices }) => {
+  return createTwoLineItem({
+    className: "my-package-item",
+    primary: highlightMatches(filterKey, matchIndices),
+    secondary: item.path,
+    trailing: [
+      item.count > 0 && { text: `+${item.count}`, className: "status-added" },
+      { text: item.branch, className: "badge badge-info" },
+    ],
+  });
+};
+```
+
+#### `createTrailingBlock(trailing)`
+
+Builds the `trailing` container on its own, for callers assembling an item element
+by hand. Returns `null` when there is nothing to show.
 
 ## Example
 
