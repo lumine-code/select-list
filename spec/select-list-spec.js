@@ -165,7 +165,7 @@ describe("SelectListView", () => {
   describe("panel management", () => {
     it("shows and hides a modal panel and focuses the query editor", () => {
       view = textItemView();
-      expect(view.isVisible()).toBeFalsy();
+      expect(view.isVisible()).toBe(false);
 
       view.show();
       expect(view.isVisible()).toBe(true);
