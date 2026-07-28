@@ -232,6 +232,17 @@ elementForItem: (item, { filterKey, highlight }) => ({
 });
 ```
 
+`didRender(element)` is called with the finished `<li>`, for decoration the
+descriptor cannot express — applying an icon, setting a dataset key. It keeps the
+markup owned by the component while the caller still reaches the result:
+
+```js
+elementForItem: (item, { highlight }) => ({
+  primary: highlight(item.path),
+  didRender: (li) => atom.icons.applyTo(li.firstChild, { path: item.path }),
+});
+```
+
 ## Example
 
 ```js

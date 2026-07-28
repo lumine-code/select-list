@@ -111,6 +111,27 @@ describe("SelectListView", () => {
       expect(Array.from(matches, (m) => m.textContent)).toEqual(["a", "c"]);
     });
 
+    it("hands a descriptor's didRender the finished element", async () => {
+      const rendered = [];
+      view = new SelectListView({
+        items: ["one", "two"],
+        elementForItem: (item) => ({
+          primary: item,
+          didRender: (li) => {
+            li.dataset.item = item;
+            rendered.push(li);
+          },
+        }),
+      });
+
+      await nextUpdate();
+      expect(rendered.length).toBe(2);
+      expect(rendered[0].tagName).toBe("LI");
+      expect(
+        Array.from(view.element.querySelectorAll("li"), (li) => li.dataset.item),
+      ).toEqual(["one", "two"]);
+    });
+
     it("passes a highlight function bound to the item's own match indices", async () => {
       view = new SelectListView({
         items: ["abc", "xyz"],
