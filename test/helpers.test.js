@@ -22,7 +22,7 @@ const fuzzyMatcher = {
   },
 };
 
-global.atom = { ui: { fuzzyMatcher } };
+global.atom = { tools: { fuzzyMatcher } };
 
 class Disposable {
   constructor(dispose) {
