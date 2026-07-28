@@ -53,8 +53,10 @@ Module._load = function load(request, parent, isMain) {
 };
 
 let selectList;
+let helpers;
 try {
   selectList = require("../lib/select-list");
+  helpers = require("../lib/helpers");
 } finally {
   Module._load = originalLoad;
 }
@@ -74,18 +76,21 @@ test("exposes the named class exports", () => {
   );
 });
 
-test("removes diacritics", () => {
-  assert.equal(selectList.removeDiacritics("café"), "cafe");
+test("exposes nothing but the two view classes", () => {
+  assert.deepEqual(Object.keys(selectList).sort(), [
+    "InputDialogView",
+    "SelectListView",
+  ]);
 });
 
 test("returns fuzzy match indices", () => {
-  assert.deepEqual(selectList.getMatchIndices("abcdef", "ace"), [0, 2, 4]);
-  assert.equal(selectList.getMatchIndices("abcdef", "xyz"), null);
+  assert.deepEqual(helpers.getMatchIndices("abcdef", "ace"), [0, 2, 4]);
+  assert.equal(helpers.getMatchIndices("abcdef", "xyz"), null);
 });
 
 test("highlights adjacent and separated matches", () => {
   const container = document.createElement("div");
-  container.appendChild(selectList.highlightMatches("abcdef", [0, 1, 3]));
+  container.appendChild(helpers.highlightMatches("abcdef", [0, 1, 3]));
 
   assert.equal(container.textContent, "abcdef");
   assert.deepEqual(
@@ -95,7 +100,7 @@ test("highlights adjacent and separated matches", () => {
 });
 
 test("creates two-line items with icon classes", () => {
-  const item = selectList.createTwoLineItem({
+  const item = helpers.createTwoLineItem({
     primary: "Primary",
     secondary: "Secondary",
     icon: ["icon-file"],
@@ -108,20 +113,20 @@ test("creates two-line items with icon classes", () => {
 });
 
 test("marks an item as two-lines only when it has a secondary line", () => {
-  const single = selectList.createTwoLineItem({ primary: "Primary" });
+  const single = helpers.createTwoLineItem({ primary: "Primary" });
   assert.equal(single.classList.contains("two-lines"), false);
   assert.equal(single.querySelector(".secondary-line"), null);
 
-  const double = selectList.createTwoLineItem({ primary: "Primary", secondary: "" });
+  const double = helpers.createTwoLineItem({ primary: "Primary", secondary: "" });
   assert.equal(double.classList.contains("two-lines"), true);
 });
 
 test("adds item class names from a string or an array", () => {
-  const fromString = selectList.createTwoLineItem({ primary: "Primary", className: "alpha beta" });
+  const fromString = helpers.createTwoLineItem({ primary: "Primary", className: "alpha beta" });
   assert.equal(fromString.classList.contains("alpha"), true);
   assert.equal(fromString.classList.contains("beta"), true);
 
-  const fromArray = selectList.createTwoLineItem({
+  const fromArray = helpers.createTwoLineItem({
     primary: "Primary",
     className: ["alpha", "beta"],
   });
@@ -132,7 +137,7 @@ test("adds item class names from a string or an array", () => {
 test("renders trailing content and skips falsy entries", () => {
   const node = document.createElement("span");
   node.textContent = "node";
-  const item = selectList.createTwoLineItem({
+  const item = helpers.createTwoLineItem({
     primary: "Primary",
     trailing: [null, { text: "+3", className: "status-added" }, false, node],
   });
@@ -146,9 +151,9 @@ test("renders trailing content and skips falsy entries", () => {
 
 test("omits the trailing block when there is nothing to show", () => {
   for (const trailing of [undefined, [], [null, false]]) {
-    const item = selectList.createTwoLineItem({ primary: "Primary", trailing });
+    const item = helpers.createTwoLineItem({ primary: "Primary", trailing });
     assert.equal(item.querySelector(".trailing-block"), null);
   }
 
-  assert.equal(selectList.createTrailingBlock([]), null);
+  assert.equal(helpers.createTrailingBlock([]), null);
 });

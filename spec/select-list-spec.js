@@ -1,10 +1,12 @@
+const { SelectListView } = require("../lib/select-list");
+// Internal render helpers. They are deliberately absent from the package's
+// public surface, so the specs reach them the same way the implementation does.
 const {
-  SelectListView,
   highlightMatches,
   getMatchIndices,
   createTwoLineItem,
   createTrailingBlock,
-} = require("../lib/select-list");
+} = require("../lib/helpers");
 
 describe("SelectListView", () => {
   let view;
@@ -107,6 +109,76 @@ describe("SelectListView", () => {
       await nextUpdate();
       const matches = view.element.querySelectorAll(".character-match");
       expect(Array.from(matches, (m) => m.textContent)).toEqual(["a", "c"]);
+    });
+
+    it("passes a highlight function bound to the item's own match indices", async () => {
+      view = new SelectListView({
+        items: ["abc", "xyz"],
+        elementForItem: (item, { filterKey, highlight }) => {
+          const li = document.createElement("li");
+          li.appendChild(highlight(filterKey));
+          return li;
+        },
+      });
+
+      view.refs.queryEditor.setText("ac");
+      await nextUpdate();
+      const matches = view.element.querySelectorAll(".character-match");
+      expect(Array.from(matches, (m) => m.textContent)).toEqual(["a", "c"]);
+    });
+
+    it("lets highlight take explicit indices, for callers that shift offsets", async () => {
+      view = new SelectListView({
+        items: ["abc"],
+        elementForItem: (item, { highlight }) => {
+          const li = document.createElement("li");
+          li.appendChild(highlight(`>${item}`, [1, 3]));
+          return li;
+        },
+      });
+
+      await nextUpdate();
+      const matches = view.element.querySelectorAll(".character-match");
+      expect(Array.from(matches, (m) => m.textContent)).toEqual(["a", "c"]);
+    });
+
+    it("does not compute match indices unless highlight is called without them", async () => {
+      const getMatchIndicesSpy = spyOn(
+        SelectListView.prototype,
+        "getMatchIndices",
+      ).andCallThrough();
+
+      view = new SelectListView({
+        items: ["abc"],
+        elementForItem: (item, { highlight }) => {
+          const li = document.createElement("li");
+          li.appendChild(highlight(item, [0]));
+          return li;
+        },
+      });
+
+      await nextUpdate();
+      expect(getMatchIndicesSpy).not.toHaveBeenCalled();
+    });
+
+    it("provides highlight on the re-render path as well", async () => {
+      view = new SelectListView({
+        // Forces the IntersectionObserver path, so re-rendering a row goes
+        // through renderItemAtIndex rather than a full renderItems pass.
+        initiallyVisibleItemCount: 1,
+        items: ["abc", "abd"],
+        elementForItem: (item, { highlight }) => {
+          const li = document.createElement("li");
+          li.appendChild(highlight(item));
+          return li;
+        },
+      });
+
+      view.refs.queryEditor.setText("ab");
+      await nextUpdate();
+      await view.selectIndex(1);
+      const matches = view.element.querySelectorAll("li .character-match");
+      expect(Array.from(matches, (m) => m.textContent)).toEqual(["ab", "ab"]);
     });
   });
 

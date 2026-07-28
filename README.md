@@ -7,7 +7,7 @@ This CommonJS [etch component](https://github.com/lumine-code/etch) provides key
 ## Features
 
 - **Fuzzy filtering**: Multiple algorithms including `command-t` for file paths.
-- **Match highlighting**: Built-in helpers for displaying match positions.
+- **Match highlighting**: A `highlight` function handed to every row renderer.
 - **Panel management**: Show/hide/toggle with focus restoration.
 - **Lazy match indices**: Match positions computed only when accessed.
 - **Diacritics support**: Accent-insensitive matching option.
@@ -20,6 +20,26 @@ This CommonJS [etch component](https://github.com/lumine-code/etch) provides key
 npm install @lumine-code/select-list
 ```
 
+Inside Lumine there is nothing to install: the editor ships this component and
+hands it out through `atom.workspace.buildSelectList(props)` and
+`atom.workspace.buildInputDialog(props)`. A package should use those rather than
+depending on this module directly.
+
+## Upgrading to 4.0.0
+
+The module now exports the two view classes and nothing else. The standalone
+helpers — `highlightMatches`, `createTwoLineItem`, `createTrailingBlock`,
+`getMatchIndices` and `removeDiacritics` — are gone from the public surface.
+
+- `highlightMatches(text, matchIndices)` → `highlight(text)` from the
+  `elementForItem` options. Pass indices as a second argument when they are not
+  the item's own.
+- `createTwoLineItem({...})` → return that same object from `elementForItem`
+  instead of an element.
+- `removeDiacritics(str)` → `atom.tools.removeDiacritics(str)`.
+- `getMatchIndices(text, query)` → `options.matchIndices` inside
+  `elementForItem`, or `atom.tools.fuzzyMatcher` directly outside one.
+
 ## API
 
 ### Constructor props
@@ -28,12 +48,13 @@ When creating a new instance of a select list, or when calling `update` on an ex
 
 #### Required
 
-- `elementForItem: (item: Object, options: Object) -> HTMLElement`: a function that is called whenever an item needs to be displayed.
+- `elementForItem: (item: Object, options: Object) -> HTMLElement|Object`: a function that is called whenever an item needs to be displayed. Return an `HTMLElement` to render it as-is, or a plain descriptor object to have a two-line row built for you — see [Rendering rows](#rendering-rows).
   - `options: Object`:
     - `selected: Boolean`: indicating whether item is selected or not.
     - `index: Number`: item's index.
     - `filterKey: String|null`: the text that was matched against (from `filterKeyForItem` or item itself).
     - `matchIndices: [Number]|null`: lazy getter - character indices in `filterKey` that matched the query. Only computed when accessed.
+    - `highlight: (text: String, indices?: [Number]) -> DocumentFragment`: wraps the matched characters of `text` in `span.character-match`. Defaults to this item's own `matchIndices`; pass `indices` explicitly when the text being rendered is not the filter key.
     - `visible: Boolean`: `false` only when `initiallyVisibleItemCount` is set and the item is still outside the visible area; return a cheap placeholder element (e.g. an empty `li`) in that case — the item re-renders with `visible: true` once scrolled into view.
 
 #### Optional
@@ -49,8 +70,8 @@ When creating a new instance of a select list, or when calling `update` on an ex
 - `algorithm: String`: the fuzzy matching algorithm to use. Options: `'fuzzaldrin'` (default), `'command-t'` (path-aware, better for file paths).
 - `numThreads: Number`: number of threads for parallel matching. Defaults to 80% of available CPUs.
 - `maxGap: Number`: maximum gap between consecutive matched characters (only for `'command-t'` algorithm). Lower values require tighter matches. Defaults to infinite.
-- `query: String`: a string that will replace the contents of the query editor.
-- `selectQuery: Boolean`: a boolean indicating whether the query text should be selected or not.
+- `query: String`: a string that will replace the contents of the query editor. Applied by `update` only — the constructor ignores it, so set the text through `update({query})` or `refs.queryEditor.setText()`.
+- `selectQuery: Boolean`: a boolean indicating whether the query text should be selected or not. Applied by `update` only, as with `query`.
 - `order: (item1: Object, item2: Object) -> Number`: a function that allows to change the order in which items are shown.
 - `emptyMessage: String`: a string shown when the list is empty.
 - `errorMessage: String`: a string that needs to be set when you want to notify the user that an error occurred.
@@ -67,6 +88,7 @@ When creating a new instance of a select list, or when calling `update` on an ex
 - `placeholderText: String`: placeholder text to display in the query editor when empty.
 - `panelItem: Object`: the item passed to `atom.workspace.addModalPanel` (defaults to the select list itself). Useful when a wrapper view should be exposed as `panel.item`; the object must have an `element` property. Constructor-only.
 - `skipCommandsRegistration: Boolean`: when `true`, skips registering default keyboard commands.
+- `headerElement: HTMLElement` and `checkboxes: [Object]` are inherited from `InputDialogView` and work here too; see [InputDialogView](#inputdialogview) for their shape.
 
 ### Registered commands
 
@@ -88,6 +110,8 @@ The `` ` `` key in the query editor also toggles help, but only when `helpMessag
 - `didConfirmEmptySelection: () -> Void`: called when the user presses Enter but the list is empty.
 - `didCancelSelection: () -> Void`: called when the user presses Esc or the list loses focus.
 - `willShow: () -> Void`: called when transitioning from hidden to visible, useful for data preparation.
+
+`SelectListView` overrides `confirm()`/`cancel()` to route to `confirmSelection()`/`cancelSelection()`, so the base `didConfirm`/`didCancel` callbacks never fire on a select list. Use the `*Selection` callbacks above; `didConfirm`/`didCancel` are for `InputDialogView`.
 
 ### Instance properties
 
@@ -116,7 +140,7 @@ The `` ` `` key in the query editor also toggles help, but only when `helpMessag
 - `update(props)`: Updates the component with new props.
 - `getQuery()`: Returns the current query string.
 - `getFilterKey(item)`: Returns the filter key string for an item (from cache, `filterKeyForItem`, or item itself).
-- `getMatchIndices(item, filterKey?)`: Returns match indices for an item, computing lazily if needed. Prefer using `options.matchIndices` in `elementForItem` instead.
+- `getMatchIndices(item, filterKey?)`: Returns match indices for an item, computing lazily if needed. Prefer `options.highlight` — or `options.matchIndices` — in `elementForItem` instead.
 - `getFilterQuery()`: Returns the filtered query string (applies `filterQuery` transformation).
 - `setQueryFromSelection()`: Sets the query text from the active editor's selection. Returns `true` if successful, `false` if no editor, no selection, or selection contains newlines.
 - `getSelectedItem()`: Returns the currently selected item.
@@ -144,91 +168,74 @@ Returns the current etch scheduler.
 
 Initializes the etch scheduler from `atom.views` if it has not already been configured.
 
-### Helper exports
+### Rendering rows
 
-The package exports these standalone helpers alongside the classes; destructure them from the module.
+The module exports the two view classes and nothing else. Everything needed to
+render a row arrives through the `options` argument of `elementForItem`, so there
+is nothing to import and nothing to keep in sync.
 
-#### `getMatchIndices(text, query, options)`
+#### Highlighting the query
 
-Computes fuzzy match indices for a text against a query. Useful outside of `elementForItem` context.
-
-```js
-const { getMatchIndices } = require("@lumine-code/select-list");
-
-const indices = getMatchIndices("MyComponent.js", "mcjs");
-// => [0, 2, 11, 12] or null if no match
-
-// With diacritics removal
-const indices = getMatchIndices("café", "cafe", { removeDiacritics: true });
-// => [0, 1, 2, 3]
-```
-
-#### `highlightMatches(text, matchIndices, options)`
-
-Creates a DocumentFragment with highlighted match characters.
+`options.highlight` wraps the matched characters in `span.character-match`. With
+one argument it uses the item's own match indices:
 
 ```js
-const { highlightMatches } = require("@lumine-code/select-list");
-
-// In elementForItem, use options.matchIndices (lazy getter):
-elementForItem: (item, { filterKey, matchIndices }) => {
+elementForItem: (item, { filterKey, highlight }) => {
   const li = document.createElement("li");
-  li.appendChild(highlightMatches(filterKey, matchIndices));
+  li.appendChild(highlight(filterKey));
   return li;
 };
 ```
 
-#### `removeDiacritics(str)`
-
-Removes diacritical marks (accents) from a string.
+Pass indices explicitly when the text you render is not the filter key — for
+example when a row prefixes the matched text and the offsets have to shift:
 
 ```js
-removeDiacritics("café"); // => 'cafe'
+elementForItem: (item, { matchIndices, highlight }) => {
+  const li = document.createElement("li");
+  li.appendChild(highlight(item.name, matchIndices.map((i) => i - offset)));
+  return li;
+};
 ```
 
-#### `createTwoLineItem(options)`
+`matchIndices` is a lazy getter, and `highlight` only reads it when called
+without indices — a row that supplies its own never pays for a fuzzy match.
 
-Creates a list item element with a primary line and an optional secondary line.
+#### Two-line rows
+
+Return a descriptor object instead of an element and the row is built for you.
 The `two-lines` class is applied only when there is a secondary line, so the same
-helper builds both one- and two-line rows.
+callback can emit both one- and two-line rows:
 
 ```js
-elementForItem: (item, { filterKey, matchIndices }) => {
-  return createTwoLineItem({
-    primary: highlightMatches(filterKey, matchIndices),
-    secondary: item.description,
-    icon: ["icon-file-text"],
-  });
-};
+elementForItem: (item, { filterKey, highlight }) => ({
+  primary: highlight(filterKey),
+  secondary: item.description,
+  icon: ["icon-file-text"],
+});
 ```
 
-`className` adds class names to the item itself, and `trailing` fills a right-hand
-block on the primary line. Trailing entries are DOM nodes, `{text, className}`
-descriptors, or falsy values that are skipped, so conditional content stays inline:
+`primary` and `secondary` take a string or a DOM node. `className` adds class
+names to the item itself, and `trailing` fills a right-hand block on the primary
+line. Trailing entries are DOM nodes, `{text, className}` descriptors, or falsy
+values that are skipped, so conditional content stays inline:
 
 ```js
-elementForItem: (item, { filterKey, matchIndices }) => {
-  return createTwoLineItem({
-    className: "my-package-item",
-    primary: highlightMatches(filterKey, matchIndices),
-    secondary: item.path,
-    trailing: [
-      item.count > 0 && { text: `+${item.count}`, className: "status-added" },
-      { text: item.branch, className: "badge badge-info" },
-    ],
-  });
-};
+elementForItem: (item, { filterKey, highlight }) => ({
+  className: "my-package-item",
+  primary: highlight(filterKey),
+  secondary: item.path,
+  trailing: [
+    item.count > 0 && { text: `+${item.count}`, className: "status-added" },
+    { text: item.branch, className: "badge badge-info" },
+  ],
+});
 ```
-
-#### `createTrailingBlock(trailing)`
-
-Builds the `trailing` container on its own, for callers assembling an item element
-by hand. Returns `null` when there is nothing to show.
 
 ## Example
 
 ```js
-const { SelectListView, highlightMatches } = require("@lumine-code/select-list");
+const { SelectListView } = require("@lumine-code/select-list");
 const fs = require("fs");
 const path = require("path");
 
@@ -242,9 +249,9 @@ class MyFileList {
       willShow: () => {
         this.loadFiles();
       },
-      elementForItem: (item, { index, filterKey, matchIndices }) => {
+      elementForItem: (item, { filterKey, highlight }) => {
         const li = document.createElement("li");
-        li.appendChild(highlightMatches(filterKey, matchIndices));
+        li.appendChild(highlight(filterKey));
         return li;
       },
       didConfirmSelection: (item) => {

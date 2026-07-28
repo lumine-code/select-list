@@ -1,6 +1,6 @@
 {
   "name": "@lumine-code/select-list",
-  "version": "3.2.2",
+  "version": "4.0.0",
   "description": "Provides a fuzzy-searchable select-list and modal panel component.",
   "author": "lumine-code",
   "keywords": [
@@ -31,10 +31,9 @@
   },
   "scripts": {
     "test": "npm run test:syntax && node --test test/helpers.test.js",
-    "test:syntax": "node --check lib/select-list.js && node --check lib/input-dialog.js"
+    "test:syntax": "node --check lib/select-list.js && node --check lib/input-dialog.js && node --check lib/helpers.js"
   },
   "dependencies": {
-    "diacritic": "^0.0.2",
     "@lumine-code/etch": "https://github.com/lumine-code/etch.git#ace74599f9d6b54e9eb24ecb1e2407e9c35fcc74"
   },
   "devDependencies": {
