@@ -1,3 +1,4 @@
+const { CompositeDisposable } = require("atom");
 const { SelectListView } = require("../lib/select-list");
 // Internal render helpers. They are deliberately absent from the package's
 // public surface, so the specs reach them the same way the implementation does.
@@ -420,6 +421,116 @@ describe("SelectListView", () => {
       expect(confirmedEmpty).toBe(true);
     });
 
+  });
+
+  describe("item actions", () => {
+    let dispatched, disposables;
+
+    beforeEach(() => {
+      dispatched = [];
+      // A package-shaped setup: commands in the package's own namespace,
+      // registered on the list's element, a keybinding scoped to the
+      // package's own class.
+      view = textItemView({ className: "spec-master", crumb: "Files" });
+      disposables = new CompositeDisposable(
+        atom.commands.add(view.element, {
+          "spec:test-action": {
+            description: "Does the test thing",
+            didDispatch: () => dispatched.push("spec:test-action"),
+          },
+          "spec:other-action": () => dispatched.push("spec:other-action"),
+        }),
+        atom.commands.add("atom-workspace", "spec:global-action", () => {}),
+        atom.keymaps.add("item-actions-spec", {
+          ".spec-master atom-text-editor[mini]": { "alt-x": "spec:test-action" },
+        }),
+      );
+    });
+
+    afterEach(() => {
+      disposables.dispose();
+    });
+
+    it("derives the rows from the dialog's own commands and keymaps", async () => {
+      view.show();
+      await view.showItemActions();
+
+      const actions = view.itemActionsList.props.items;
+      const test = actions.find((action) => action.command === "spec:test-action");
+      expect(test.name).toBe("Test Action");
+      expect(test.description).toBe("Does the test thing");
+      expect(test.keystrokes).toEqual(["alt-x"]);
+      expect(actions.some((action) => action.command === "spec:other-action")).toBe(true);
+      // Commands from outside the dialog and its own chrome stay out.
+      expect(actions.some((action) => action.command === "spec:global-action")).toBe(false);
+      expect(actions.some((action) => action.command === "core:confirm")).toBe(false);
+      expect(actions.some((action) => action.command === "select-list:help")).toBe(false);
+      expect(actions.some((action) => action.command === "select-list:actions")).toBe(false);
+      expect(atom.workspace.getModalTrail()).toEqual(["Files", "Actions"]);
+      expect(view.itemActionsList.props.infoMessage).toBe("one");
+    });
+
+    it("renders name, description, and keybinding like the command palette", async () => {
+      view.show();
+      await view.showItemActions();
+      await view.itemActionsList.constructor.getScheduler().getNextUpdatePromise();
+
+      const row = Array.from(view.itemActionsList.element.querySelectorAll("li")).find((li) =>
+        li.textContent.includes("Test Action"),
+      );
+      expect(row.querySelector(".secondary-line").textContent).toBe("Does the test thing");
+      expect(row.querySelector(".key-binding").textContent).toBe("alt-x");
+    });
+
+    it("runs a confirmed action against the re-shown master list", async () => {
+      view.show();
+      await view.showItemActions();
+
+      const index = view.itemActionsList.items.findIndex(
+        (item) => item.command === "spec:test-action",
+      );
+      view.itemActionsList.selectIndex(index);
+      view.itemActionsList.confirmSelection();
+
+      expect(dispatched).toEqual(["spec:test-action"]);
+      expect(view.isVisible()).toBeTruthy();
+      expect(view.itemActionsList.isVisible()).toBeFalsy();
+      expect(atom.workspace.getModalTrail()).toEqual(["Files"]);
+    });
+
+    it("keeps the action keybinding working inside the actions list", async () => {
+      view.show();
+      await view.showItemActions();
+
+      // The dynamic keymap carries the binding into the actions context...
+      const bindings = atom.keymaps.findKeyBindings({
+        command: "spec:test-action",
+        target: view.itemActionsList.refs.queryEditor.element,
+      });
+      expect(bindings.some((binding) => binding.keystrokes === "alt-x")).toBe(true);
+
+      // ...and the forwarder runs the action against the master list.
+      atom.commands.dispatch(view.itemActionsList.element, "spec:test-action");
+      expect(dispatched).toEqual(["spec:test-action"]);
+      expect(view.isVisible()).toBeTruthy();
+    });
+
+    it("stops forwarding an action after the actions list hides", async () => {
+      view.show();
+      await view.showItemActions();
+
+      view.itemActionsList.hide();
+      atom.commands.dispatch(view.itemActionsList.element, "spec:test-action");
+
+      expect(dispatched).toEqual([]);
+    });
+
+    it("does nothing when the list offers no actions", async () => {
+      disposables.dispose();
+      view.show();
+      await view.showItemActions();
+      expect(view.itemActionsList).toBeUndefined();
+    });
   });
 
   describe("helpers", () => {

@@ -111,6 +111,8 @@ The `` ` `` key in the query editor also toggles help, but only when `helpMessag
 - `didCancelSelection: () -> Void`: called when the user presses Esc or the list loses focus.
 - `willShow: () -> Void`: called whenever the panel becomes visible — a plain `show()`, a modal-flow step change, or a back navigation re-showing the list — useful for data preparation.
 - `crumb: String`: the label this list carries on the workspace's modal breadcrumb trail, used when it is shown as a flow step without an explicit label and when a step shown on top of it adopts it as the trail root.
+- `actionsFilter: (descriptor) -> Boolean`: which of the dialog's own commands the item-actions list offers. Defaults to everything the dialog contributes minus `core:*` and the built-in chrome commands.
+- `skipItemActions: Boolean`: opt this list out of the item-actions list entirely.
 
 `SelectListView` overrides `confirm()`/`cancel()` to route to `confirmSelection()`/`cancelSelection()`, so the base `didConfirm`/`didCancel` callbacks never fire on a select list. Use the `*Selection` callbacks above; `didConfirm`/`didCancel` are for `InputDialogView`.
 
@@ -132,6 +134,11 @@ The `` ` `` key in the query editor also toggles help, but only when `helpMessag
 - `isHelpMode()`: Returns `true` if help is currently displayed.
 - `toggleHelp()`: Toggles help message visibility. Only works if `helpMessage` is set.
 - `hideHelp()`: Hides help message if currently shown.
+
+#### Item actions
+
+- `showItemActions()`: Shows the item-actions list as a modal-flow step (crumb "Actions") — the commands the dialog itself contributes, in the package's own namespace (`fuzzy-files:open`), with the label, description, and keybindings each carries in the command registry and keymaps, rendered command-palette style. Bound to F12 as `select-list:actions` in the editor's promoted modal-chrome keymap. Confirming a row — or pressing an action's own keybinding right in the actions list, which wears the master's classes so the package keymap applies there untouched — returns to the master first and then dispatches the command against its selection, exactly as if the keystroke was pressed there. A package only has to register its commands with a `description` for the rows to explain themselves; nothing is declared twice.
+- `itemActions()`: Returns the derived action descriptors (`{name, description, command, keystrokes}`).
 
 #### Other methods
 
