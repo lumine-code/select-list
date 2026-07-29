@@ -73,9 +73,9 @@ describe("SelectListView", () => {
       expect(listTexts()).toEqual(["beta"]);
     });
 
-    it("limits the rendered items to maxResults", () => {
+    it("limits the rendered items to a maxResults batch behind the Show more row", () => {
       view = textItemView({ maxResults: 2 });
-      expect(listTexts()).toEqual(["one", "two"]);
+      expect(listTexts()).toEqual(["one", "two", "Show more…"]);
     });
 
     it("renders emptyMessage when no items match", async () => {
@@ -421,6 +421,118 @@ describe("SelectListView", () => {
       expect(confirmedEmpty).toBe(true);
     });
 
+  });
+
+  describe("show more", () => {
+    function bigListView(count = 250, props = {}) {
+      return textItemView({
+        items: Array.from({ length: count }, (_, i) => `item-${String(i).padStart(3, "0")}`),
+        ...props,
+      });
+    }
+
+    it("caps the list at 99 by default and ends it with the Show more row", () => {
+      view = bigListView();
+      const rows = view.element.querySelectorAll("li");
+      expect(rows.length).toBe(100);
+      expect(rows[99].textContent).toBe("Show more…");
+      expect(rows[99].classList.contains("show-more-item")).toBe(true);
+    });
+
+    it("renders no Show more row when everything fits", () => {
+      view = bigListView(99);
+      const rows = view.element.querySelectorAll("li");
+      expect(rows.length).toBe(99);
+      expect(view.element.querySelector(".show-more-item")).toBeNull();
+    });
+
+    it("treats maxResults as the batch size, not a hard drop", async () => {
+      view = bigListView(12, { maxResults: 5 });
+      expect(view.element.querySelectorAll("li").length).toBe(6);
+
+      await view.showMore();
+      expect(view.element.querySelectorAll("li").length).toBe(11);
+
+      await view.showMore();
+      const rows = view.element.querySelectorAll("li");
+      expect(rows.length).toBe(12);
+      expect(view.element.querySelector(".show-more-item")).toBeNull();
+    });
+
+    it("expands on confirm and selects the first newly revealed item", async () => {
+      const confirmed = [];
+      view = bigListView(12, {
+        maxResults: 5,
+        didConfirmSelection: (item) => confirmed.push(item),
+      });
+      await view.selectLast();
+      expect(view.getSelectedItem()).toBeNull();
+
+      view.confirmSelection();
+      await view.constructor.getScheduler().getNextUpdatePromise();
+
+      expect(confirmed).toEqual([]);
+      expect(view.getSelectedItem()).toBe("item-005");
+    });
+
+    it("reports null selection while the Show more row is highlighted", async () => {
+      const selections = [];
+      view = bigListView(200, { didChangeSelection: (item) => selections.push(item) });
+      await view.selectLast();
+      expect(selections[selections.length - 1]).toBeNull();
+    });
+
+    it("starts from the base cap again when the query changes", async () => {
+      view = bigListView();
+      await view.showMore();
+      expect(view.element.querySelectorAll("li").length).toBe(199);
+
+      view.refs.queryEditor.setText("item-0");
+      await nextUpdate();
+
+      // 100 matches (item-000 … item-099) cap back to 99 plus the row.
+      expect(view.element.querySelectorAll("li").length).toBe(100);
+      expect(view.element.querySelector(".show-more-item")).not.toBeNull();
+    });
+
+    it("keeps the scroll position when the row is clicked", async () => {
+      view = bigListView();
+      view.show();
+      const scroller = view.refs.items;
+      scroller.style.maxHeight = "100px";
+      scroller.style.overflowY = "auto";
+      scroller.scrollTop = scroller.scrollHeight;
+      const before = scroller.scrollTop;
+      expect(before).toBeGreaterThan(0);
+
+      view.didClickItem(view.items.length - 1);
+      await view.constructor.getScheduler().getNextUpdatePromise();
+
+      expect(view.refs.items).toBe(scroller);
+      expect(scroller.scrollTop).toBe(before);
+    });
+
+    it("never hands the sentinel to the consumer's renderer or filter key", () => {
+      const rendered = [];
+      const keyed = [];
+      view = new SelectListView({
+        items: Array.from({ length: 150 }, (_, i) => ({ name: `n${i}` })),
+        filterKeyForItem: (item) => {
+          keyed.push(item);
+          return item.name;
+        },
+        elementForItem: (item) => {
+          rendered.push(item);
+          const li = document.createElement("li");
+          li.textContent = item.name;
+          return li;
+        },
+      });
+
+      expect(rendered.some((item) => item.showMoreSentinel)).toBe(false);
+      expect(keyed.some((item) => item.showMoreSentinel)).toBe(false);
+      expect(view.element.querySelector(".show-more-item")).not.toBeNull();
+    });
   });
 
   describe("item actions", () => {
