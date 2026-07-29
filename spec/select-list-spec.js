@@ -464,7 +464,6 @@ describe("SelectListView", () => {
       // Commands from outside the dialog and its own chrome stay out.
       expect(actions.some((action) => action.command === "spec:global-action")).toBe(false);
       expect(actions.some((action) => action.command === "core:confirm")).toBe(false);
-      expect(actions.some((action) => action.command === "select-list:help")).toBe(false);
       expect(actions.some((action) => action.command === "select-list:actions")).toBe(false);
       expect(atom.workspace.getModalTrail()).toEqual(["Files", "Actions"]);
       expect(view.itemActionsList.props.infoMessage).toBe("one");

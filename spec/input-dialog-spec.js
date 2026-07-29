@@ -302,25 +302,12 @@ describe("InputDialogView", () => {
     });
   });
 
-  describe("help toggling via backtick", () => {
-    function backtickEvent() {
-      return new KeyboardEvent("keydown", { key: "`", bubbles: true, cancelable: true });
-    }
-
-    it("toggles help when help content exists", () => {
-      view = new InputDialogView({ helpMessage: "<p>help</p>" });
-      const event = backtickEvent();
-      view.refs.queryEditor.element.dispatchEvent(event);
-      expect(event.defaultPrevented).toBe(true);
-      expect(view.showHelp).toBe(true);
-    });
-
-    it("types normally when no help content exists", () => {
+  describe("typing", () => {
+    it("lets a backtick through as a normal character", () => {
       view = new InputDialogView({});
-      const event = backtickEvent();
+      const event = new KeyboardEvent("keydown", { key: "`", bubbles: true, cancelable: true });
       view.refs.queryEditor.element.dispatchEvent(event);
       expect(event.defaultPrevented).toBe(false);
-      expect(view.showHelp).toBe(false);
     });
   });
 

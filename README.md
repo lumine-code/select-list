@@ -11,7 +11,6 @@ This CommonJS [etch component](https://github.com/lumine-code/etch) provides key
 - **Panel management**: Show/hide/toggle with focus restoration.
 - **Lazy match indices**: Match positions computed only when accessed.
 - **Diacritics support**: Accent-insensitive matching option.
-- **Help mode**: Toggle help content in the panel.
 - **Dialog base**: `InputDialogView` exposes the modal panel, query editor, and focus behavior for dialogs that are not lists.
 
 ## Installation
@@ -76,13 +75,11 @@ When creating a new instance of a select list, or when calling `update` on an ex
 - `emptyMessage: String`: a string shown when the list is empty.
 - `errorMessage: String`: a string that needs to be set when you want to notify the user that an error occurred.
 - `infoMessage: String`: a string that needs to be set when you want to provide some information to the user.
-- `helpMessage: String`: HTML content to display when help is toggled.
-- `helpMarkdown: String`: markdown content to display when help is toggled. Rendered using Lumine's built-in markdown renderer.
 - `loadingMessage: String`: a string that needs to be set when you are loading items in the background.
 - `loadingSpinner: Boolean`: show spinner next to loading message.
 - `loadingBadge: String/Number`: a string or number that needs to be set when the progress status changes.
 - `itemsClassList: [String]`: an array of strings that will be added as class names to the items element.
-- `contentElement: HTMLElement`: a caller-owned DOM element rendered below the list and messages. Interactive elements inside it (`input`, `textarea`, `select`, `button`, `a[href]`, `[tabindex]`, `atom-text-editor`) can receive focus and clicks; anywhere else keeps focus in the query editor. Hidden while help is displayed.
+- `contentElement: HTMLElement`: a caller-owned DOM element rendered below the list and messages. Interactive elements inside it (`input`, `textarea`, `select`, `button`, `a[href]`, `[tabindex]`, `atom-text-editor`) can receive focus and clicks; anywhere else keeps focus in the query editor.
 - `initialSelectionIndex: Number`: the index of the item to initially select; defaults to `0`.
 - `initiallyVisibleItemCount: Number`: render only the first N items eagerly; items beyond that count get `visible: false` in `elementForItem` and are re-rendered when scrolled into view (via `IntersectionObserver`). Useful for very long lists with expensive item rendering. Constructor-only — cannot be changed via `update`.
 - `placeholderText: String`: placeholder text to display in the query editor when empty.
@@ -98,9 +95,6 @@ By default, the component registers these commands on its element:
 - `core:move-to-top` / `core:move-to-bottom`: Jump to first/last item
 - `core:confirm`: Confirm selection
 - `core:cancel`: Cancel selection
-- `select-list:help`: Toggle help message visibility (requires `helpMessage` or `helpMarkdown`)
-
-The `` ` `` key in the query editor also toggles help, but only when `helpMessage` or `helpMarkdown` is set; otherwise it types normally.
 
 #### Callbacks
 
@@ -131,9 +125,6 @@ The `` ` `` key in the query editor also toggles help, but only when `helpMessag
 - `toggle()`: Toggles the visibility of the panel.
 - `isVisible()`: Returns `true` if the panel is currently visible.
 - `getPanel()`: Returns the modal panel hosting the select list, creating it hidden on first access.
-- `isHelpMode()`: Returns `true` if help is currently displayed.
-- `toggleHelp()`: Toggles help message visibility. Only works if `helpMessage` is set.
-- `hideHelp()`: Hides help message if currently shown.
 
 #### Item actions
 
@@ -308,7 +299,7 @@ class MyFileList {
 - `checkboxes: [{ label, config?, checked?, onChange? }]`: a row of checkboxes rendered below the messages. A checkbox with a `config` key is bound to `atom.config`: it reflects the current value, writes on toggle (propagating to every renderer), and re-renders on external change. Without `config` it keeps local state seeded from `checked`. `onChange(checked)` is called on every toggle. Toggling returns focus to the query editor so Enter still confirms.
 - `query: String` / `selectQuery: Boolean`: control the query editor content and selection via `update`.
 - `filterQuery: (query: String) -> String`: a transformation applied to the query before it is passed to `didChangeQuery`.
-- `emptyMessage` is not supported (there is no list); `infoMessage`, `errorMessage`, `loadingMessage`, `loadingSpinner`, `loadingBadge`, `helpMessage`, and `helpMarkdown` behave as on `SelectListView`.
+- `emptyMessage` is not supported (there is no list); `infoMessage`, `errorMessage`, `loadingMessage`, `loadingSpinner`, and `loadingBadge` behave as on `SelectListView`.
 - `panelItem`, `skipCommandsRegistration`, `crumb`: as on `SelectListView`.
 
 Interactive controls anywhere in the dialog (checkboxes, buttons, links, inputs inside `contentElement`) receive focus and clicks normally; clicking non-interactive chrome keeps focus in the query editor.
