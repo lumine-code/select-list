@@ -543,6 +543,26 @@ describe("SelectListView", () => {
       expect(scroller.scrollTop).toBe(before);
     });
 
+    it("scrolls the viewport to the selection when keyboard navigation expands from afar", async () => {
+      view = bigListView();
+      view.show();
+      const scroller = view.refs.items;
+      scroller.style.maxHeight = "100px";
+      scroller.style.overflowY = "auto";
+      scroller.scrollTop = 0;
+      await view.selectIndex(0);
+
+      await view.selectLast();
+
+      expect(view.getSelectedItem()).toBe("item-099");
+      expect(scroller.scrollTop).toBeGreaterThan(0);
+      const selected = view.element.querySelector("li.selected");
+      const selRect = selected.getBoundingClientRect();
+      const scrRect = scroller.getBoundingClientRect();
+      expect(selRect.top).not.toBeLessThan(scrRect.top - 1);
+      expect(selRect.bottom).not.toBeGreaterThan(scrRect.bottom + 1);
+    });
+
     it("never hands the sentinel to the consumer's renderer or filter key", () => {
       const rendered = [];
       const keyed = [];
