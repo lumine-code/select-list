@@ -291,18 +291,23 @@ describe("SelectListView", () => {
       expect(view.getPanel().getItem()).toBe(wrapper);
     });
 
-    it("calls willShow before becoming visible", () => {
-      let willShowCalled = false;
-      let visibleDuringWillShow = null;
+    it("calls willShow whenever the panel becomes visible", () => {
+      let willShowCalls = 0;
       view = textItemView({
-        willShow: () => {
-          willShowCalled = true;
-          visibleDuringWillShow = view.isVisible();
-        },
+        willShow: () => willShowCalls++,
       });
       view.show();
-      expect(willShowCalled).toBe(true);
-      expect(visibleDuringWillShow).toBeFalsy();
+      expect(willShowCalls).toBe(1);
+
+      // Showing while already visible does not re-run it.
+      view.show();
+      expect(willShowCalls).toBe(1);
+
+      // The panel being shown from outside the view runs it too — that is
+      // how a modal-flow back navigation refreshes the list.
+      view.hide();
+      view.getPanel().show();
+      expect(willShowCalls).toBe(2);
     });
 
     it("destroys its panel on destroy", async () => {

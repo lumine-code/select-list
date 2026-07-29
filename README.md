@@ -109,7 +109,8 @@ The `` ` `` key in the query editor also toggles help, but only when `helpMessag
 - `didConfirmSelection: (item: Object) -> Void`: called when the user clicks or presses Enter on an item.
 - `didConfirmEmptySelection: () -> Void`: called when the user presses Enter but the list is empty.
 - `didCancelSelection: () -> Void`: called when the user presses Esc or the list loses focus.
-- `willShow: () -> Void`: called when transitioning from hidden to visible, useful for data preparation.
+- `willShow: () -> Void`: called whenever the panel becomes visible — a plain `show()`, a modal-flow step change, or a back navigation re-showing the list — useful for data preparation.
+- `crumb: String`: the label this list carries on the workspace's modal breadcrumb trail, used when it is shown as a flow step without an explicit label and when a step shown on top of it adopts it as the trail root.
 
 `SelectListView` overrides `confirm()`/`cancel()` to route to `confirmSelection()`/`cancelSelection()`, so the base `didConfirm`/`didCancel` callbacks never fire on a select list. Use the `*Selection` callbacks above; `didConfirm`/`didCancel` are for `InputDialogView`.
 
@@ -123,7 +124,7 @@ The `` ` `` key in the query editor also toggles help, but only when `helpMessag
 
 #### Panel management
 
-- `show()`: Shows the select list as a modal panel and focuses the query editor. Calls `willShow` callback if provided.
+- `show(options?)`: Shows the select list as a modal panel and focuses the query editor, running `willShow` first. Passing `{crumb: "Label"}` (or `crumb: true` to use the `crumb` prop) shows it as a step of the workspace's modal flow instead: the modal visible at that moment becomes the previous breadcrumb entry, and Shift-Escape or a click on an earlier crumb returns to it with its state intact. Escape still cancels the visible step, which ends the whole trail. The show side effects run whenever the panel becomes visible, whoever shows it.
 - `hide()`: Hides the panel and restores focus to the previously focused element.
 - `toggle()`: Toggles the visibility of the panel.
 - `isVisible()`: Returns `true` if the panel is currently visible.
@@ -299,7 +300,7 @@ class MyFileList {
 - `query: String` / `selectQuery: Boolean`: control the query editor content and selection via `update`.
 - `filterQuery: (query: String) -> String`: a transformation applied to the query before it is passed to `didChangeQuery`.
 - `emptyMessage` is not supported (there is no list); `infoMessage`, `errorMessage`, `loadingMessage`, `loadingSpinner`, `loadingBadge`, `helpMessage`, and `helpMarkdown` behave as on `SelectListView`.
-- `panelItem`, `skipCommandsRegistration`: as on `SelectListView`.
+- `panelItem`, `skipCommandsRegistration`, `crumb`: as on `SelectListView`.
 
 Interactive controls anywhere in the dialog (checkboxes, buttons, links, inputs inside `contentElement`) receive focus and clicks normally; clicking non-interactive chrome keeps focus in the query editor.
 
@@ -308,11 +309,11 @@ Interactive controls anywhere in the dialog (checkboxes, buttons, links, inputs 
 - `didChangeQuery: (query: String) -> Void`: called when the query changes.
 - `didConfirm: (query: String) -> Void`: called on `core:confirm` with the raw query text.
 - `didCancel: () -> Void`: called on `core:cancel` or when focus leaves the dialog.
-- `willShow: () -> Void`: called when transitioning from hidden to visible.
+- `willShow: () -> Void`: called whenever the panel becomes visible, whoever shows it.
 
 ### Methods
 
-Panel and query management match `SelectListView`: `show()`, `hide()`, `toggle()`, `isVisible()`, `getPanel()`, `focus()`, `reset()`, `destroy()`, `update(props)`, `getQuery()`, `getFilterQuery()`, `setQueryFromSelection()`, plus `confirm()` and `cancel()` to trigger the callbacks programmatically. `refs.queryEditor` exposes the underlying `TextEditor`.
+Panel and query management match `SelectListView`: `show(options?)` (including the `{crumb}` modal-flow form), `hide()`, `toggle()`, `isVisible()`, `getPanel()`, `focus()`, `reset()`, `destroy()`, `update(props)`, `getQuery()`, `getFilterQuery()`, `setQueryFromSelection()`, plus `confirm()` and `cancel()` to trigger the callbacks programmatically. `refs.queryEditor` exposes the underlying `TextEditor`.
 
 ### Dialog example
 

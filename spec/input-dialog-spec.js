@@ -171,6 +171,70 @@ describe("InputDialogView", () => {
     });
   });
 
+  describe("modal flow integration", () => {
+    it("runs the show side effects when the panel is shown from outside", () => {
+      let willShowCalls = 0;
+      view = new InputDialogView({ willShow: () => willShowCalls++ });
+      view.refs.queryEditor.setText("kept");
+
+      view.getPanel().show();
+
+      expect(willShowCalls).toBe(1);
+      expect(view.isVisible()).toBe(true);
+      expect(view.element.contains(document.activeElement)).toBe(true);
+      expect(view.refs.queryEditor.getSelectedText()).toBe("kept");
+    });
+
+    it("carries the crumb prop on its panel and keeps it in sync", async () => {
+      view = new InputDialogView({ crumb: "Branches" });
+      expect(view.getPanel().crumb).toBe("Branches");
+
+      await view.update({ crumb: "Refs" });
+      expect(view.panel.crumb).toBe("Refs");
+    });
+
+    it("enters a flow step without cancelling the dialog it covers", async () => {
+      let cancelled = false;
+      view = new InputDialogView({ crumb: "Root", didCancel: () => (cancelled = true) });
+      const step = new InputDialogView({});
+      try {
+        view.show();
+
+        step.show({ crumb: "Step" });
+
+        expect(cancelled).toBe(false);
+        expect(view.isVisible()).toBe(false);
+        expect(step.isVisible()).toBe(true);
+        expect(atom.workspace.getModalTrail()).toEqual(["Root", "Step"]);
+      } finally {
+        await step.destroy();
+      }
+    });
+
+    it("re-runs the show side effects when the flow navigates back", async () => {
+      let willShowCalls = 0;
+      view = new InputDialogView({ crumb: "Root", willShow: () => willShowCalls++ });
+      const step = new InputDialogView({});
+      try {
+        view.show();
+        view.refs.queryEditor.setText("query");
+        step.show({ crumb: "Step" });
+        expect(willShowCalls).toBe(1);
+
+        expect(atom.workspace.popModal()).toBe(true);
+
+        expect(willShowCalls).toBe(2);
+        expect(view.isVisible()).toBe(true);
+        expect(view.refs.queryEditor.getText()).toBe("query");
+        expect(view.refs.queryEditor.getSelectedText()).toBe("query");
+        expect(view.element.contains(document.activeElement)).toBe(true);
+        expect(atom.workspace.getModalTrail()).toEqual(["Root"]);
+      } finally {
+        await step.destroy();
+      }
+    });
+  });
+
   describe("focus policy", () => {
     it("keeps focus in the query editor when pressing non-interactive content", () => {
       const content = document.createElement("div");
