@@ -465,7 +465,8 @@ describe("SelectListView", () => {
         maxResults: 5,
         didConfirmSelection: (item) => confirmed.push(item),
       });
-      await view.selectLast();
+      // selectIndex is the raw path a mouse click takes — no auto-expand.
+      await view.selectIndex(5);
       expect(view.getSelectedItem()).toBeNull();
 
       view.confirmSelection();
@@ -478,8 +479,38 @@ describe("SelectListView", () => {
     it("reports null selection while the Show more row is highlighted", async () => {
       const selections = [];
       view = bigListView(200, { didChangeSelection: (item) => selections.push(item) });
-      await view.selectLast();
+      await view.selectIndex(view.items.length - 1);
       expect(selections[selections.length - 1]).toBeNull();
+    });
+
+    it("auto-expands when keyboard navigation touches the row", async () => {
+      const confirmed = [];
+      view = bigListView(12, {
+        maxResults: 5,
+        didConfirmSelection: (item) => confirmed.push(item),
+      });
+      await view.selectIndex(4);
+
+      await view.selectNext();
+
+      expect(confirmed).toEqual([]);
+      expect(view.element.querySelectorAll("li").length).toBe(11);
+      expect(view.getSelectedItem()).toBe("item-005");
+    });
+
+    it("auto-expands on the wrap-around and on select-last, one batch at a time", async () => {
+      view = bigListView(12, { maxResults: 5 });
+
+      // Wrapping upward from the first item lands on the row: expand instead.
+      await view.selectPrevious();
+      expect(view.getSelectedItem()).toBe("item-005");
+      expect(view.element.querySelectorAll("li").length).toBe(11);
+
+      // Select-last touches the new row: one more batch, no chain.
+      await view.selectLast();
+      expect(view.getSelectedItem()).toBe("item-010");
+      expect(view.element.querySelectorAll("li").length).toBe(12);
+      expect(view.element.querySelector(".show-more-item")).toBeNull();
     });
 
     it("starts from the base cap again when the query changes", async () => {
