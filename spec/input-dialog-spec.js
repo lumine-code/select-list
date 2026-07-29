@@ -211,6 +211,30 @@ describe("InputDialogView", () => {
       }
     });
 
+    it("offers its own commands as item actions, like a select list", async () => {
+      view = new InputDialogView({ className: "dialog-spec", crumb: "Dialog" });
+      const commands = atom.commands.add(view.element, {
+        "dialog-spec:clear": {
+          description: "Clear the field and start over",
+          didDispatch: () => {},
+        },
+      });
+      try {
+        view.show();
+        await view.showItemActions();
+
+        expect(view.itemActionsList.isVisible()).toBeTruthy();
+        expect(view.itemActionsList.props.items.map((a) => a.command)).toEqual([
+          "dialog-spec:clear",
+        ]);
+        // A plain dialog has no selection to name.
+        expect(view.itemActionsList.props.infoMessage).toBeNull();
+        expect(atom.workspace.getModalTrail()).toEqual(["Dialog", "Actions"]);
+      } finally {
+        commands.dispose();
+      }
+    });
+
     it("re-runs the show side effects when the flow navigates back", async () => {
       let willShowCalls = 0;
       view = new InputDialogView({ crumb: "Root", willShow: () => willShowCalls++ });

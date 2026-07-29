@@ -516,6 +516,18 @@ describe("SelectListView", () => {
       expect(view.isVisible()).toBeTruthy();
     });
 
+    it("toggles back to the master when the actions command fires in the actions list", async () => {
+      view.show();
+      await view.showItemActions();
+      expect(view.itemActionsList.isVisible()).toBeTruthy();
+
+      atom.commands.dispatch(view.itemActionsList.element, "select-list:actions");
+
+      expect(view.isVisible()).toBeTruthy();
+      expect(view.itemActionsList.isVisible()).toBeFalsy();
+      expect(atom.workspace.getModalTrail()).toEqual(["Files"]);
+    });
+
     it("stops forwarding an action after the actions list hides", async () => {
       view.show();
       await view.showItemActions();
