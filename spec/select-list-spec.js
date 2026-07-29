@@ -479,7 +479,8 @@ describe("SelectListView", () => {
         li.textContent.includes("Test Action"),
       );
       expect(row.querySelector(".secondary-line").textContent).toBe("Does the test thing");
-      expect(row.querySelector(".key-binding").textContent).toBe("alt-x");
+      // Keystrokes render humanized, the way the command palette writes them.
+      expect(row.querySelector(".key-binding").textContent).toBe("Alt+X");
     });
 
     it("runs a confirmed action against the re-shown master list", async () => {
