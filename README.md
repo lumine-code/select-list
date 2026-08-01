@@ -79,6 +79,8 @@ When creating a new instance of a select list, or when calling `update` on an ex
 - `loadingSpinner: Boolean`: show spinner next to loading message.
 - `loadingBadge: String/Number`: a string or number that needs to be set when the progress status changes.
 - `itemsClassList: [String]`: an array of strings that will be added as class names to the items element.
+- `separatorIds: [String|Number]`: item identifiers before which the list inserts a standalone `li.select-list-separator` with `role="separator"`. Separators are list chrome: they are not selectable, filterable, counted by `maxResults`, or passed to consumer callbacks. Object items use their `id` property by default; primitive items identify themselves.
+- `idForItem: (item: Object) -> String|Number`: returns the stable identifier compared with `separatorIds`, overriding the default described above.
 - `contentElement: HTMLElement`: a caller-owned DOM element rendered below the list and messages. Interactive elements inside it (`input`, `textarea`, `select`, `button`, `a[href]`, `[tabindex]`, `atom-text-editor`) can receive focus and clicks; anywhere else keeps focus in the query editor.
 - `initialSelectionIndex: Number`: the index of the item to initially select; defaults to `0`.
 - `initiallyVisibleItemCount: Number`: render only the first N items eagerly; items beyond that count get `visible: false` in `elementForItem` and are re-rendered when scrolled into view (via `IntersectionObserver`). Useful for very long lists with expensive item rendering. Constructor-only — cannot be changed via `update`.
@@ -140,6 +142,8 @@ Defined on `InputDialogView`, so every select list *and* every dialog offers the
 - `destroy()`: Disposes of the component and cleans up resources.
 - `update(props)`: Updates the component with new props.
 - `getQuery()`: Returns the current query string.
+- `getIdForItem(item)`: Returns the identifier used to match an item against `separatorIds`.
+- `hasSeparatorBefore(item)`: Returns whether the current props request a separator immediately before an item.
 - `getFilterKey(item)`: Returns the filter key string for an item (from cache, `filterKeyForItem`, or item itself).
 - `getMatchIndices(item, filterKey?)`: Returns match indices for an item, computing lazily if needed. Prefer `options.highlight` — or `options.matchIndices` — in `elementForItem` instead.
 - `getFilterQuery()`: Returns the filtered query string (applies `filterQuery` transformation).

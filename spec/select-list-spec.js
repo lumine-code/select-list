@@ -73,6 +73,41 @@ describe("SelectListView", () => {
       expect(listTexts()).toEqual(["beta"]);
     });
 
+    it("renders standalone separators before items selected by id", async () => {
+      view = textItemView({ separatorIds: ["two"] });
+
+      let separator = view.element.querySelector(".select-list-separator");
+      expect(separator.tagName).toBe("LI");
+      expect(separator.getAttribute("role")).toBe("separator");
+      expect(separator.previousElementSibling.textContent).toBe("one");
+      expect(separator.nextElementSibling.textContent).toBe("two");
+      expect(view.items).toEqual(["one", "two", "three"]);
+
+      await view.selectNext();
+      expect(view.getSelectedItem()).toBe("two");
+      expect(view.element.querySelector("li.selected").textContent).toBe("two");
+
+      await view.update({ separatorIds: ["three"] });
+      separator = view.element.querySelector(".select-list-separator");
+      expect(separator.previousElementSibling.textContent).toBe("two");
+      expect(separator.nextElementSibling.textContent).toBe("three");
+    });
+
+    it("supports custom item identifiers for separators", () => {
+      const items = [{ name: "alpha" }, { name: "beta" }];
+      view = new SelectListView({
+        items,
+        separatorIds: ["BETA"],
+        idForItem: (item) => item.name.toUpperCase(),
+        filterKeyForItem: (item) => item.name,
+        elementForItem: (item) => ({ primary: item.name }),
+      });
+
+      const separator = view.element.querySelector(".select-list-separator");
+      expect(separator.previousElementSibling.textContent).toBe("alpha");
+      expect(separator.nextElementSibling.textContent).toBe("beta");
+    });
+
     it("limits the rendered items to a maxResults batch behind the Show more row", () => {
       view = textItemView({ maxResults: 2 });
       expect(listTexts()).toEqual(["one", "two", "Show more…"]);
