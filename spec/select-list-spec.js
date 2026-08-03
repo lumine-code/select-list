@@ -257,6 +257,47 @@ describe("SelectListView", () => {
       expect(view.getSelectedItem()).toBe("one");
     });
 
+    it("starts empty and steps off both ends into the empty selection when allowed", async () => {
+      view = textItemView({ allowEmptySelection: true });
+      // The state has to be reachable to be useful, so the list starts in it.
+      expect(view.getSelectedItem()).toBeNull();
+
+      await view.selectNext();
+      expect(view.getSelectedItem()).toBe("one");
+      await view.selectNext();
+      await view.selectNext();
+      expect(view.getSelectedItem()).toBe("three");
+
+      // Off the end, then back in at the far end.
+      await view.selectNext();
+      expect(view.getSelectedItem()).toBeNull();
+      await view.selectNext();
+      expect(view.getSelectedItem()).toBe("one");
+
+      // Up is the same cycle in reverse.
+      await view.selectPrevious();
+      expect(view.getSelectedItem()).toBeNull();
+      await view.selectPrevious();
+      expect(view.getSelectedItem()).toBe("three");
+    });
+
+    it("still takes an explicit initial selection when empty selections are allowed", async () => {
+      view = textItemView({ allowEmptySelection: true, initialSelectionIndex: 0 });
+      expect(view.getSelectedItem()).toBe("one");
+
+      await view.selectPrevious();
+      expect(view.getSelectedItem()).toBeNull();
+    });
+
+    it("names an end rather than emptying the selection when asked for one", async () => {
+      view = textItemView({ allowEmptySelection: true });
+
+      await view.selectLast();
+      expect(view.getSelectedItem()).toBe("three");
+      await view.selectFirst();
+      expect(view.getSelectedItem()).toBe("one");
+    });
+
     it("marks the selected item's element and reports selection changes", async () => {
       const selections = [];
       view = textItemView({ didChangeSelection: (item) => selections.push(item) });
@@ -546,6 +587,25 @@ describe("SelectListView", () => {
       expect(view.getSelectedItem()).toBe("item-010");
       expect(view.element.querySelectorAll("li").length).toBe(12);
       expect(view.element.querySelector(".show-more-item")).toBeNull();
+    });
+
+    it("expands the rest of the matches before it empties the selection", async () => {
+      view = bigListView(12, { maxResults: 5, allowEmptySelection: true });
+      await view.selectIndex(4);
+
+      // The bottom of the list is the Show more row, not the end of the
+      // matches, so stepping down reveals them rather than leaving the list.
+      await view.selectNext();
+      expect(view.getSelectedItem()).toBe("item-005");
+
+      await view.selectLast();
+      expect(view.getSelectedItem()).toBe("item-010");
+      await view.selectNext();
+      expect(view.getSelectedItem()).toBe("item-011");
+
+      // Now the end of the list really is the end of the matches.
+      await view.selectNext();
+      expect(view.getSelectedItem()).toBeNull();
     });
 
     it("starts from the base cap again when the query changes", async () => {
