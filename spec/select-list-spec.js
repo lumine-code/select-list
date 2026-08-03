@@ -756,6 +756,57 @@ describe("SelectListView", () => {
       expect(atom.workspace.getModalTrail()).toEqual(["Files"]);
     });
 
+    it("hands the action the selection it was chosen for, past a reloading willShow", async () => {
+      // The shape that breaks it: a list that reseeds its items every time it
+      // is shown. Returning from the actions list shows it again, and the
+      // reseed resets the selection to the top — so the action would act on
+      // the wrong item, and on a real one, which is what makes it silent.
+      const selections = [];
+      view.props.willShow = () => view.update({ items: ["one", "two", "three"] });
+      disposables.add(
+        atom.commands.add(view.element, {
+          "spec:read-selection": () => selections.push(view.getSelectedItem()),
+        }),
+      );
+
+      view.show();
+      await view.selectIndex(2);
+      await view.showItemActions();
+
+      const index = view.itemActionsList.items.findIndex(
+        (item) => item.command === "spec:read-selection",
+      );
+      view.itemActionsList.selectIndex(index);
+      view.itemActionsList.confirmSelection();
+
+      expect(selections).toEqual(["three"]);
+    });
+
+    it("lets the reload's own selection stand when it dropped the selected item", async () => {
+      const selections = [];
+      view.props.willShow = () => view.update({ items: ["one", "two"] });
+      disposables.add(
+        atom.commands.add(view.element, {
+          "spec:read-selection": () => selections.push(view.getSelectedItem()),
+        }),
+      );
+
+      view.show();
+      await view.selectIndex(2);
+      await view.showItemActions();
+
+      const index = view.itemActionsList.items.findIndex(
+        (item) => item.command === "spec:read-selection",
+      );
+      view.itemActionsList.selectIndex(index);
+      view.itemActionsList.confirmSelection();
+
+      // "three" is gone, so there is nothing to put back: the reload really
+      // did unselect it, and restoring whichever row took its index would be
+      // the same silent swap this guards against.
+      expect(selections).toEqual(["one"]);
+    });
+
     it("keeps the action keybinding working inside the actions list", async () => {
       view.show();
       await view.showItemActions();
