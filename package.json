@@ -38,6 +38,6 @@
     "@lumine-code/underscore-plus": "https://github.com/lumine-code/underscore-plus.git#91bdb6152d7b3f86f198917707e258af5470db9f"
   },
   "devDependencies": {
-    "jsdom": "^29.1.1"
+    "jsdom": "^30.0.1"
   }
 }
