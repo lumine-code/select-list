@@ -27,7 +27,7 @@
     "README.md"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "scripts": {
     "test": "npm run test:syntax && node --test test/helpers.test.js",
