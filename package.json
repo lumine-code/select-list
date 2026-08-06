@@ -36,7 +36,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@lumine-code/etch": "github:lumine-code/etch#ba07febd6dc1df9b0917f9579da85fbd96a16a75",
+    "@lumine-code/etch": "github:lumine-code/etch#f42254f4cae46ea7c8147038bf99240e15faf6e2",
     "@lumine-code/underscore-plus": "github:lumine-code/underscore-plus#3187fd4c2dd47f50044efe51deb7c662ddac437c"
   },
   "devDependencies": {
