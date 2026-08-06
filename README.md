@@ -131,7 +131,7 @@ By default, the component registers these commands on its element:
 
 #### Item actions
 
-Defined on `InputDialogView`, so every select list *and* every dialog offers them.
+Defined on `InputDialogView`, so every select list _and_ every dialog offers them.
 
 - `showItemActions()`: Shows the item-actions list as a modal-flow step (crumb "Actions") — the commands the dialog itself contributes, in the package's own namespace (`fuzzy-files:open`), with the label, description, and keybindings each carries in the command registry and keymaps, rendered command-palette style. Bound to F12 as `select-list:actions`; F12 pressed in the actions list itself goes back, so the key toggles. Confirming a row — or pressing an action's own keybinding right in the actions list, which wears the master's classes so the package keymap applies there untouched — returns to the master first and then dispatches the command, exactly as if the keystroke was pressed there. A package only has to register its commands with a `description` for the rows to explain themselves; nothing is declared twice.
 - `itemActions()`: Returns the derived action descriptors (`{name, description, command, keystrokes}`).
@@ -199,7 +199,12 @@ example when a row prefixes the matched text and the offsets have to shift:
 ```js
 elementForItem: (item, { matchIndices, highlight }) => {
   const li = document.createElement("li");
-  li.appendChild(highlight(item.name, matchIndices.map((i) => i - offset)));
+  li.appendChild(
+    highlight(
+      item.name,
+      matchIndices.map((i) => i - offset),
+    ),
+  );
   return li;
 };
 ```

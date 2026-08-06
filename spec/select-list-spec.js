@@ -163,9 +163,10 @@ describe("SelectListView", () => {
       await nextUpdate();
       expect(rendered.length).toBe(2);
       expect(rendered[0].tagName).toBe("LI");
-      expect(
-        Array.from(view.element.querySelectorAll("li"), (li) => li.dataset.item),
-      ).toEqual(["one", "two"]);
+      expect(Array.from(view.element.querySelectorAll("li"), (li) => li.dataset.item)).toEqual([
+        "one",
+        "two",
+      ]);
     });
 
     it("passes a highlight function bound to the item's own match indices", async () => {
@@ -496,7 +497,6 @@ describe("SelectListView", () => {
       view.confirmSelection();
       expect(confirmedEmpty).toBe(true);
     });
-
   });
 
   describe("show more", () => {

@@ -70,17 +70,11 @@ test.after(() => {
 test("exposes the named class exports", () => {
   assert.equal(typeof selectList.SelectListView, "function");
   assert.equal(typeof selectList.InputDialogView, "function");
-  assert.equal(
-    Object.getPrototypeOf(selectList.SelectListView),
-    selectList.InputDialogView,
-  );
+  assert.equal(Object.getPrototypeOf(selectList.SelectListView), selectList.InputDialogView);
 });
 
 test("exposes nothing but the two view classes", () => {
-  assert.deepEqual(Object.keys(selectList).sort(), [
-    "InputDialogView",
-    "SelectListView",
-  ]);
+  assert.deepEqual(Object.keys(selectList).sort(), ["InputDialogView", "SelectListView"]);
 });
 
 test("returns fuzzy match indices", () => {
