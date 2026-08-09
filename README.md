@@ -2,7 +2,7 @@
 
 Provides a fuzzy-searchable select-list and modal panel component.
 
-This CommonJS [etch component](https://github.com/lumine-code/etch) provides keyboard and mouse navigation with built-in panel management. It is derived from [atom-select-list](https://github.com/atom/atom-select-list) and is maintained for Lumine's editor runtime.
+This CommonJS [etch component](https://github.com/lumine-code/etch) provides keyboard and mouse navigation with built-in panel management. It is derived from Atom's [select-list](https://github.com/atom/select-list) and is maintained for Lumine's editor runtime.
 
 ## Features
 
@@ -20,8 +20,8 @@ npm install @lumine-code/select-list
 ```
 
 Inside Lumine there is nothing to install: the editor ships this component and
-hands it out through `atom.workspace.buildSelectList(props)` and
-`atom.workspace.buildInputDialog(props)`. A package should use those rather than
+hands it out through `lumine.workspace.buildSelectList(props)` and
+`lumine.workspace.buildInputDialog(props)`. A package should use those rather than
 depending on this module directly.
 
 ## Upgrading to 4.0.0
@@ -35,9 +35,9 @@ helpers — `highlightMatches`, `createTwoLineItem`, `createTrailingBlock`,
   the item's own.
 - `createTwoLineItem({...})` → return that same object from `elementForItem`
   instead of an element.
-- `removeDiacritics(str)` → `atom.tools.removeDiacritics(str)`.
+- `removeDiacritics(str)` → `lumine.tools.removeDiacritics(str)`.
 - `getMatchIndices(text, query)` → `options.matchIndices` inside
-  `elementForItem`, or `atom.tools.fuzzyMatcher` directly outside one.
+  `elementForItem`, or `lumine.tools.fuzzyMatcher` directly outside one.
 
 ## API
 
@@ -81,12 +81,12 @@ When creating a new instance of a select list, or when calling `update` on an ex
 - `itemsClassList: [String]`: an array of strings that will be added as class names to the items element.
 - `separatorIds: [String|Number]`: item identifiers before which the list inserts a standalone `li.select-list-separator` with `role="separator"`. Separators are list chrome: they are not selectable, filterable, counted by `maxResults`, or passed to consumer callbacks. Object items use their `id` property by default; primitive items identify themselves.
 - `idForItem: (item: Object) -> String|Number`: returns the stable identifier compared with `separatorIds`, overriding the default described above.
-- `contentElement: HTMLElement`: a caller-owned DOM element rendered below the list and messages. Interactive elements inside it (`input`, `textarea`, `select`, `button`, `a[href]`, `[tabindex]`, `atom-text-editor`) can receive focus and clicks; anywhere else keeps focus in the query editor.
+- `contentElement: HTMLElement`: a caller-owned DOM element rendered below the list and messages. Interactive elements inside it (`input`, `textarea`, `select`, `button`, `a[href]`, `[tabindex]`, `lumine-text-editor`) can receive focus and clicks; anywhere else keeps focus in the query editor.
 - `initialSelectionIndex: Number`: the index of the item to initially select; defaults to `0`, or to no selection at all when `allowEmptySelection` is set.
 - `allowEmptySelection: Boolean`: treat "nothing selected" as a state of its own — the state in which confirming acts on the query rather than on a row. The list starts in it unless `initialSelectionIndex` says otherwise, and `core:move-up`/`core:move-down` return to it when they step off the top or the bottom, entering the list again at the far end on the next move. Without it the two ends wrap straight into each other, since there is nothing to pass through. `core:move-to-top` and `core:move-to-bottom` are asked for an end by name and always give one. A `Show more…` row still expands before the selection is emptied.
 - `initiallyVisibleItemCount: Number`: render only the first N items eagerly; items beyond that count get `visible: false` in `elementForItem` and are re-rendered when scrolled into view (via `IntersectionObserver`). Useful for very long lists with expensive item rendering. Constructor-only — cannot be changed via `update`.
 - `placeholderText: String`: placeholder text to display in the query editor when empty.
-- `panelItem: Object`: the item passed to `atom.workspace.addModalPanel` (defaults to the select list itself). Useful when a wrapper view should be exposed as `panel.item`; the object must have an `element` property. Constructor-only.
+- `panelItem: Object`: the item passed to `lumine.workspace.addModalPanel` (defaults to the select list itself). Useful when a wrapper view should be exposed as `panel.item`; the object must have an `element` property. Constructor-only.
 - `skipCommandsRegistration: Boolean`: when `true`, skips registering default keyboard commands.
 - `headerElement: HTMLElement` and `checkboxes: [Object]` are inherited from `InputDialogView` and work here too; see [InputDialogView](#inputdialogview) for their shape.
 
@@ -164,7 +164,7 @@ Defined on `InputDialogView`, so every select list _and_ every dialog offers the
 
 #### `SelectListView.setScheduler(scheduler)`
 
-Sets the etch scheduler used by the component. The component initializes this to `atom.views` automatically when possible.
+Sets the etch scheduler used by the component. The component initializes this to `lumine.views` automatically when possible.
 
 #### `SelectListView.getScheduler()`
 
@@ -172,7 +172,7 @@ Returns the current etch scheduler.
 
 #### `SelectListView.initializeScheduler()`
 
-Initializes the etch scheduler from `atom.views` if it has not already been configured.
+Initializes the etch scheduler from `lumine.views` if it has not already been configured.
 
 ### Rendering rows
 
@@ -250,7 +250,7 @@ markup owned by the component while the caller still reaches the result:
 ```js
 elementForItem: (item, { highlight }) => ({
   primary: highlight(item.path),
-  didRender: (li) => atom.icons.applyTo(li.firstChild, { path: item.path }),
+  didRender: (li) => lumine.icons.applyTo(li.firstChild, { path: item.path }),
 });
 ```
 
@@ -277,7 +277,7 @@ class MyFileList {
         return li;
       },
       didConfirmSelection: (item) => {
-        atom.workspace.open(item.path);
+        lumine.workspace.open(item.path);
         this.selectList.hide();
       },
       didCancelSelection: () => {
@@ -306,7 +306,7 @@ class MyFileList {
 - `placeholderText: String`: placeholder text for the query editor.
 - `headerElement: HTMLElement`: a caller-owned DOM element rendered **above** the query editor (e.g. an icon prompt label).
 - `contentElement: HTMLElement`: a caller-owned DOM element rendered **below** the messages.
-- `checkboxes: [{ label, config?, checked?, onChange? }]`: a row of checkboxes rendered below the messages. A checkbox with a `config` key is bound to `atom.config`: it reflects the current value, writes on toggle (propagating to every renderer), and re-renders on external change. Without `config` it keeps local state seeded from `checked`. `onChange(checked)` is called on every toggle. Toggling returns focus to the query editor so Enter still confirms.
+- `checkboxes: [{ label, config?, checked?, onChange? }]`: a row of checkboxes rendered below the messages. A checkbox with a `config` key is bound to `lumine.config`: it reflects the current value, writes on toggle (propagating to every renderer), and re-renders on external change. Without `config` it keeps local state seeded from `checked`. `onChange(checked)` is called on every toggle. Toggling returns focus to the query editor so Enter still confirms.
 - `query: String` / `selectQuery: Boolean`: control the query editor content and selection via `update`.
 - `filterQuery: (query: String) -> String`: a transformation applied to the query before it is passed to `didChangeQuery`.
 - `emptyMessage` is not supported (there is no list); `infoMessage`, `errorMessage`, `loadingMessage`, `loadingSpinner`, and `loadingBadge` behave as on `SelectListView`.

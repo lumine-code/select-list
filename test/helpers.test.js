@@ -22,7 +22,7 @@ const fuzzyMatcher = {
   },
 };
 
-global.atom = { tools: { fuzzyMatcher } };
+global.lumine = { tools: { fuzzyMatcher } };
 
 class Disposable {
   constructor(dispose) {
@@ -39,7 +39,7 @@ class TextEditor {}
 
 const originalLoad = Module._load;
 Module._load = function load(request, parent, isMain) {
-  if (request === "atom") {
+  if (request === "lumine") {
     return { Disposable, CompositeDisposable, TextEditor };
   }
   if (request === "@lumine-code/etch") {
@@ -63,7 +63,7 @@ try {
 
 test.after(() => {
   dom.window.close();
-  delete global.atom;
+  delete global.lumine;
   delete global.document;
 });
 

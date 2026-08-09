@@ -1,4 +1,4 @@
-const { CompositeDisposable } = require("atom");
+const { CompositeDisposable } = require("lumine");
 const { SelectListView } = require("../lib/select-list");
 // Internal render helpers. They are deliberately absent from the package's
 // public surface, so the specs reach them the same way the implementation does.
@@ -33,7 +33,7 @@ describe("SelectListView", () => {
   }
 
   beforeEach(() => {
-    jasmine.attachToDOM(atom.views.getView(atom.workspace));
+    jasmine.attachToDOM(lumine.views.getView(lumine.workspace));
   });
 
   afterEach(async () => {
@@ -340,7 +340,7 @@ describe("SelectListView", () => {
 
       view.show();
       expect(view.isVisible()).toBe(true);
-      expect(atom.workspace.getModalPanels()).toContain(view.panel);
+      expect(lumine.workspace.getModalPanels()).toContain(view.panel);
       expect(view.element.contains(document.activeElement)).toBe(true);
 
       view.hide();
@@ -354,7 +354,7 @@ describe("SelectListView", () => {
       view = textItemView();
       const panel = view.getPanel();
       expect(panel.isVisible()).toBe(false);
-      expect(atom.workspace.getModalPanels()).toContain(panel);
+      expect(lumine.workspace.getModalPanels()).toContain(panel);
 
       view.show();
       expect(view.panel).toBe(panel);
@@ -393,7 +393,7 @@ describe("SelectListView", () => {
       const panel = view.getPanel();
       await view.destroy();
       view = null;
-      expect(atom.workspace.getModalPanels()).not.toContain(panel);
+      expect(lumine.workspace.getModalPanels()).not.toContain(panel);
     });
   });
 
@@ -691,16 +691,16 @@ describe("SelectListView", () => {
       // package's own class.
       view = textItemView({ className: "spec-master", crumb: "Files" });
       disposables = new CompositeDisposable(
-        atom.commands.add(view.element, {
+        lumine.commands.add(view.element, {
           "spec:test-action": {
             description: "Does the test thing",
             didDispatch: () => dispatched.push("spec:test-action"),
           },
           "spec:other-action": () => dispatched.push("spec:other-action"),
         }),
-        atom.commands.add("atom-workspace", "spec:global-action", () => {}),
-        atom.keymaps.add("item-actions-spec", {
-          ".spec-master atom-text-editor[mini]": { "alt-x": "spec:test-action" },
+        lumine.commands.add("lumine-workspace", "spec:global-action", () => {}),
+        lumine.keymaps.add("item-actions-spec", {
+          ".spec-master lumine-text-editor[mini]": { "alt-x": "spec:test-action" },
         }),
       );
     });
@@ -723,7 +723,7 @@ describe("SelectListView", () => {
       expect(actions.some((action) => action.command === "spec:global-action")).toBe(false);
       expect(actions.some((action) => action.command === "core:confirm")).toBe(false);
       expect(actions.some((action) => action.command === "select-list:actions")).toBe(false);
-      expect(atom.workspace.getModalTrail()).toEqual(["Files", "Actions"]);
+      expect(lumine.workspace.getModalTrail()).toEqual(["Files", "Actions"]);
       expect(view.itemActionsList.props.infoMessage).toBe("one");
     });
 
@@ -753,7 +753,7 @@ describe("SelectListView", () => {
       expect(dispatched).toEqual(["spec:test-action"]);
       expect(view.isVisible()).toBeTruthy();
       expect(view.itemActionsList.isVisible()).toBeFalsy();
-      expect(atom.workspace.getModalTrail()).toEqual(["Files"]);
+      expect(lumine.workspace.getModalTrail()).toEqual(["Files"]);
     });
 
     it("hands the action the selection it was chosen for, past a reloading willShow", async () => {
@@ -764,7 +764,7 @@ describe("SelectListView", () => {
       const selections = [];
       view.props.willShow = () => view.update({ items: ["one", "two", "three"] });
       disposables.add(
-        atom.commands.add(view.element, {
+        lumine.commands.add(view.element, {
           "spec:read-selection": () => selections.push(view.getSelectedItem()),
         }),
       );
@@ -786,7 +786,7 @@ describe("SelectListView", () => {
       const selections = [];
       view.props.willShow = () => view.update({ items: ["one", "two"] });
       disposables.add(
-        atom.commands.add(view.element, {
+        lumine.commands.add(view.element, {
           "spec:read-selection": () => selections.push(view.getSelectedItem()),
         }),
       );
@@ -812,14 +812,14 @@ describe("SelectListView", () => {
       await view.showItemActions();
 
       // The dynamic keymap carries the binding into the actions context...
-      const bindings = atom.keymaps.findKeyBindings({
+      const bindings = lumine.keymaps.findKeyBindings({
         command: "spec:test-action",
         target: view.itemActionsList.refs.queryEditor.element,
       });
       expect(bindings.some((binding) => binding.keystrokes === "alt-x")).toBe(true);
 
       // ...and the forwarder runs the action against the master list.
-      atom.commands.dispatch(view.itemActionsList.element, "spec:test-action");
+      lumine.commands.dispatch(view.itemActionsList.element, "spec:test-action");
       expect(dispatched).toEqual(["spec:test-action"]);
       expect(view.isVisible()).toBeTruthy();
     });
@@ -829,11 +829,11 @@ describe("SelectListView", () => {
       await view.showItemActions();
       expect(view.itemActionsList.isVisible()).toBeTruthy();
 
-      atom.commands.dispatch(view.itemActionsList.element, "select-list:actions");
+      lumine.commands.dispatch(view.itemActionsList.element, "select-list:actions");
 
       expect(view.isVisible()).toBeTruthy();
       expect(view.itemActionsList.isVisible()).toBeFalsy();
-      expect(atom.workspace.getModalTrail()).toEqual(["Files"]);
+      expect(lumine.workspace.getModalTrail()).toEqual(["Files"]);
     });
 
     it("stops forwarding an action after the actions list hides", async () => {
@@ -841,7 +841,7 @@ describe("SelectListView", () => {
       await view.showItemActions();
 
       view.itemActionsList.hide();
-      atom.commands.dispatch(view.itemActionsList.element, "spec:test-action");
+      lumine.commands.dispatch(view.itemActionsList.element, "spec:test-action");
 
       expect(dispatched).toEqual([]);
     });

@@ -4,7 +4,7 @@ describe("InputDialogView", () => {
   let view;
 
   beforeEach(() => {
-    jasmine.attachToDOM(atom.views.getView(atom.workspace));
+    jasmine.attachToDOM(lumine.views.getView(lumine.workspace));
   });
 
   afterEach(async () => {
@@ -65,11 +65,11 @@ describe("InputDialogView", () => {
     const CONFIG_KEY = "input-dialog-spec.flag";
 
     afterEach(() => {
-      atom.config.unset(CONFIG_KEY);
+      lumine.config.unset(CONFIG_KEY);
     });
 
     it("reflects the bound config value and updates it on toggle", () => {
-      atom.config.set(CONFIG_KEY, true);
+      lumine.config.set(CONFIG_KEY, true);
       view = new InputDialogView({
         checkboxes: [{ label: "Do the thing", config: CONFIG_KEY }],
       });
@@ -79,17 +79,17 @@ describe("InputDialogView", () => {
 
       input.checked = false;
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      expect(atom.config.get(CONFIG_KEY)).toBe(false);
+      expect(lumine.config.get(CONFIG_KEY)).toBe(false);
     });
 
     it("re-renders when the bound config changes externally", async () => {
-      atom.config.set(CONFIG_KEY, false);
+      lumine.config.set(CONFIG_KEY, false);
       view = new InputDialogView({
         checkboxes: [{ label: "Flag", config: CONFIG_KEY }],
       });
       expect(view.element.querySelector(".input-checkbox").checked).toBe(false);
 
-      atom.config.set(CONFIG_KEY, true);
+      lumine.config.set(CONFIG_KEY, true);
       await InputDialogView.getScheduler().getNextUpdatePromise();
       expect(view.element.querySelector(".input-checkbox").checked).toBe(true);
     });
@@ -149,7 +149,7 @@ describe("InputDialogView", () => {
 
       view.show();
       expect(view.isVisible()).toBe(true);
-      expect(atom.workspace.getModalPanels()).toContain(view.panel);
+      expect(lumine.workspace.getModalPanels()).toContain(view.panel);
       expect(view.element.contains(document.activeElement)).toBe(true);
 
       view.hide();
@@ -162,7 +162,7 @@ describe("InputDialogView", () => {
       view.show();
 
       const outside = document.createElement("input");
-      atom.views.getView(atom.workspace).appendChild(outside);
+      lumine.views.getView(lumine.workspace).appendChild(outside);
       outside.focus();
       await new Promise(requestAnimationFrame);
       await new Promise(requestAnimationFrame);
@@ -205,7 +205,7 @@ describe("InputDialogView", () => {
         expect(cancelled).toBe(false);
         expect(view.isVisible()).toBe(false);
         expect(step.isVisible()).toBe(true);
-        expect(atom.workspace.getModalTrail()).toEqual(["Root", "Step"]);
+        expect(lumine.workspace.getModalTrail()).toEqual(["Root", "Step"]);
       } finally {
         await step.destroy();
       }
@@ -213,7 +213,7 @@ describe("InputDialogView", () => {
 
     it("offers its own commands as item actions, like a select list", async () => {
       view = new InputDialogView({ className: "dialog-spec", crumb: "Dialog" });
-      const commands = atom.commands.add(view.element, {
+      const commands = lumine.commands.add(view.element, {
         "dialog-spec:clear": {
           description: "Clear the field and start over",
           didDispatch: () => {},
@@ -229,7 +229,7 @@ describe("InputDialogView", () => {
         ]);
         // A plain dialog has no selection to name.
         expect(view.itemActionsList.props.infoMessage).toBeNull();
-        expect(atom.workspace.getModalTrail()).toEqual(["Dialog", "Actions"]);
+        expect(lumine.workspace.getModalTrail()).toEqual(["Dialog", "Actions"]);
       } finally {
         commands.dispose();
       }
@@ -245,14 +245,14 @@ describe("InputDialogView", () => {
         step.show({ crumb: "Step" });
         expect(willShowCalls).toBe(1);
 
-        expect(atom.workspace.popModal()).toBe(true);
+        expect(lumine.workspace.popModal()).toBe(true);
 
         expect(willShowCalls).toBe(2);
         expect(view.isVisible()).toBe(true);
         expect(view.refs.queryEditor.getText()).toBe("query");
         expect(view.refs.queryEditor.getSelectedText()).toBe("query");
         expect(view.element.contains(document.activeElement)).toBe(true);
-        expect(atom.workspace.getModalTrail()).toEqual(["Root"]);
+        expect(lumine.workspace.getModalTrail()).toEqual(["Root"]);
       } finally {
         await step.destroy();
       }

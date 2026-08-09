@@ -5,7 +5,7 @@ const prettier = require("eslint-config-prettier");
 
 // Provided by the editor at runtime rather than by this package's manifest, so
 // eslint-plugin-n cannot resolve it.
-const runtimeModules = ["atom"];
+const runtimeModules = ["lumine"];
 
 module.exports = [
   { ignores: ["node_modules/**", "build/**", "**/fixtures/**"] },
@@ -20,7 +20,7 @@ module.exports = [
       sourceType: "commonjs",
       globals: {
         ...globals.node,
-        atom: "readonly",
+        lumine: "readonly",
         // Renders DOM: window, document and the element constructors are part
         // of this library's own runtime, not just its tests.
         ...globals.browser,
@@ -53,7 +53,7 @@ module.exports = [
         ...globals.jasmine,
         ...globals.mocha,
         ...globals.browser,
-        atom: "readonly",
+        lumine: "readonly",
       },
     },
     rules: {
