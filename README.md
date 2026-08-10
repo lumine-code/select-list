@@ -11,6 +11,7 @@ This CommonJS [etch component](https://github.com/lumine-code/etch) provides key
 - **Panel management**: Show/hide/toggle with focus restoration.
 - **Lazy match indices**: Match positions computed only when accessed.
 - **Diacritics support**: Accent-insensitive matching option.
+- **One message line**: Loading, status, and resting info resolve by precedence, with severities and self-clearing messages.
 - **Dialog base**: `InputDialogView` exposes the modal panel, query editor, and focus behavior for dialogs that are not lists.
 
 ## Installation
@@ -23,6 +24,64 @@ Inside Lumine there is nothing to install: the editor ships this component and
 hands it out through `lumine.workspace.buildSelectList(props)` and
 `lumine.workspace.buildInputDialog(props)`. A package should use those rather than
 depending on this module directly.
+
+## The message line
+
+A dialog shows **one** message at a time, above the list. Three props feed it,
+and the component picks between them in precedence order:
+
+1. `loadingMessage` — work is in flight. Rendered with a spinner, and with
+   `loadingBadge` beside it when progress arrives in batches.
+2. `status` — an episodic message: a validation failure, a warning, a
+   confirmation.
+3. `infoMessage` — the resting line, shown when neither of the above is.
+
+Nothing stacks. A status does not destroy the resting line, it covers it, so
+clearing the status brings the line back with nothing to save and restore.
+
+```js
+view.update({ status: { type: "error", message: "Enter a branch name." } });
+view.update({ status: { type: "warning", message: "This overwrites bird.png." } });
+view.update({ status: { type: "info", message: "Copied", duration: 2000 } });
+view.update({ status: null }); // back to the resting infoMessage
+```
+
+- `type: "info" | "warning" | "error"` — defaults to `"info"`. It selects the
+  theme's own `text-info` / `text-warning` / `text-error` colour, and an
+  `error` carries `role="alert"` where the others carry `role="status"`.
+- `message: String` — the text. Newlines are preserved.
+- `duration: Number` — milliseconds, after which the status clears itself.
+  Anything that replaces the status cancels a pending expiry first, so a timer
+  from a superseded message can never wipe a newer one.
+- `sticky: Boolean` — keep the status when the query changes. **By default a
+  status is cleared on the next query change**, because it was raised in answer
+  to the query it appeared under. Set this for a status that did not come from
+  the input at all — a background refresh that failed, say.
+
+Errors that are not about the dialog's own input belong in
+`lumine.notifications`, not here. The rule of thumb: if the user can fix it by
+typing something else, it is a `status`; if it needs an action elsewhere, it is
+a notification.
+
+## Upgrading to 6.0.0
+
+The three independent message props became one line with a precedence, and the
+spinner stopped being optional.
+
+- `errorMessage: "…"` → `status: { type: "error", message: "…" }`.
+- `loadingSpinner` is gone — delete it. The spinner always renders with
+  `loadingMessage`, and it replaces the hourglass glyph the stylesheet used to
+  add.
+- Clearing a message by hand on every query change is no longer needed. Drop
+  the `didChangeQuery` handler that did it, or pass `sticky: true` on the
+  statuses that should survive a keystroke.
+- Hand-rolled auto-dismiss — a `setTimeout` that nulls the message — becomes
+  `duration`.
+- `infoMessage` is unchanged, but it is now covered rather than accompanied by
+  a loading or status message.
+- `SelectListView` elements now carry **both** `input-dialog` and `select-list`
+  classes, mirroring the class hierarchy. A stylesheet rule that means dialogs
+  and not lists is written `.input-dialog:not(.select-list)`.
 
 ## Upgrading to 4.0.0
 
@@ -72,12 +131,11 @@ When creating a new instance of a select list, or when calling `update` on an ex
 - `query: String`: a string that will replace the contents of the query editor. Applied by `update` only — the constructor ignores it, so set the text through `update({query})` or `refs.queryEditor.setText()`.
 - `selectQuery: Boolean`: a boolean indicating whether the query text should be selected or not. Applied by `update` only, as with `query`.
 - `order: (item1: Object, item2: Object) -> Number`: a function that allows to change the order in which items are shown.
-- `emptyMessage: String`: a string shown when the list is empty.
-- `errorMessage: String`: a string that needs to be set when you want to notify the user that an error occurred.
-- `infoMessage: String`: a string that needs to be set when you want to provide some information to the user.
-- `loadingMessage: String`: a string that needs to be set when you are loading items in the background.
-- `loadingSpinner: Boolean`: show spinner next to loading message.
-- `loadingBadge: String/Number`: a string or number that needs to be set when the progress status changes.
+- `emptyMessage: String`: a string shown when the list has no items. It stands down while a loading or status message is showing — a failed load that also said "no results" would be reporting the same fact twice — but coexists with the resting `infoMessage`, since a stat line and "No matches found" are two different statements.
+- `infoMessage: String`: the resting line — a prompt, a help text, a stat line. It is the dialog's own chrome, not an event, so it survives everything shown over it.
+- `loadingMessage: String`: set while items are loading in the background. A spinner is rendered with it always; there is no option to suppress it.
+- `loadingBadge: String/Number`: rendered beside the loading message, for progress that arrives in batches.
+- `status: Object|null`: the episodic message — see [The message line](#the-message-line).
 - `itemsClassList: [String]`: an array of strings that will be added as class names to the items element.
 - `separatorIds: [String|Number]`: item identifiers before which the list inserts a standalone `li.select-list-separator` with `role="separator"`. Separators are list chrome: they are not selectable, filterable, counted by `maxResults`, or passed to consumer callbacks. Object items use their `id` property by default; primitive items identify themselves.
 - `idForItem: (item: Object) -> String|Number`: returns the stable identifier compared with `separatorIds`, overriding the default described above.
@@ -309,7 +367,7 @@ class MyFileList {
 - `checkboxes: [{ label, config?, checked?, onChange? }]`: a row of checkboxes rendered below the messages. A checkbox with a `config` key is bound to `lumine.config`: it reflects the current value, writes on toggle (propagating to every renderer), and re-renders on external change. Without `config` it keeps local state seeded from `checked`. `onChange(checked)` is called on every toggle. Toggling returns focus to the query editor so Enter still confirms.
 - `query: String` / `selectQuery: Boolean`: control the query editor content and selection via `update`.
 - `filterQuery: (query: String) -> String`: a transformation applied to the query before it is passed to `didChangeQuery`.
-- `emptyMessage` is not supported (there is no list); `infoMessage`, `errorMessage`, `loadingMessage`, `loadingSpinner`, and `loadingBadge` behave as on `SelectListView`.
+- `emptyMessage` is not supported (there is no list); `infoMessage`, `loadingMessage`, `loadingBadge`, and `status` behave as on `SelectListView` — see [The message line](#the-message-line).
 - `panelItem`, `skipCommandsRegistration`, `crumb`: as on `SelectListView`.
 
 Interactive controls anywhere in the dialog (checkboxes, buttons, links, inputs inside `contentElement`) receive focus and clicks normally; clicking non-interactive chrome keeps focus in the query editor.
@@ -346,7 +404,8 @@ class NameDialog {
 
   confirm(name) {
     if (!name.trim()) {
-      this.dialog.update({ errorMessage: "Enter a name." });
+      // Cleared for you on the next keystroke.
+      this.dialog.update({ status: { type: "error", message: "Enter a name." } });
       return;
     }
     this.onConfirm?.(name.trim());
