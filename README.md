@@ -20,24 +20,17 @@ This CommonJS [etch component](https://github.com/lumine-code/etch) provides key
 npm install @lumine-code/select-list
 ```
 
-Inside Lumine there is nothing to install: the editor ships this component and
-hands it out through `lumine.workspace.buildSelectList(props)` and
-`lumine.workspace.buildInputDialog(props)`. A package should use those rather than
-depending on this module directly.
+Inside Lumine there is nothing to install: the editor ships this component and hands it out through `lumine.workspace.buildSelectList(props)` and `lumine.workspace.buildInputDialog(props)`. A package should use those rather than depending on this module directly.
 
 ## The message line
 
-A dialog shows **one** message at a time, above the list. Three props feed it,
-and the component picks between them in precedence order:
+A dialog shows **one** message at a time, above the list. Three props feed it, and the component picks between them in precedence order:
 
-1. `loadingMessage` — work is in flight. Rendered with a spinner, and with
-   `loadingBadge` beside it when progress arrives in batches.
-2. `status` — an episodic message: a validation failure, a warning, a
-   confirmation.
+1. `loadingMessage` — work is in flight. Rendered with a spinner, and with `loadingBadge` beside it when progress arrives in batches.
+2. `status` — an episodic message: a validation failure, a warning, a confirmation.
 3. `infoMessage` — the resting line, shown when neither of the above is.
 
-Nothing stacks. A status does not destroy the resting line, it covers it, so
-clearing the status brings the line back with nothing to save and restore.
+Nothing stacks. A status does not destroy the resting line, it covers it, so clearing the status brings the line back with nothing to save and restore.
 
 ```js
 view.update({ status: { type: "error", message: "Enter a branch name." } });
@@ -46,57 +39,32 @@ view.update({ status: { type: "info", message: "Copied", duration: 2000 } });
 view.update({ status: null }); // back to the resting infoMessage
 ```
 
-- `type: "info" | "warning" | "error"` — defaults to `"info"`. It selects the
-  theme's own `text-info` / `text-warning` / `text-error` colour, and an
-  `error` carries `role="alert"` where the others carry `role="status"`.
+- `type: "info" | "warning" | "error"` — defaults to `"info"`. It selects the theme's own `text-info` / `text-warning` / `text-error` colour, and an `error` carries `role="alert"` where the others carry `role="status"`.
 - `message: String` — the text. Newlines are preserved.
-- `duration: Number` — milliseconds, after which the status clears itself.
-  Anything that replaces the status cancels a pending expiry first, so a timer
-  from a superseded message can never wipe a newer one.
-- `sticky: Boolean` — keep the status when the query changes. **By default a
-  status is cleared on the next query change**, because it was raised in answer
-  to the query it appeared under. Set this for a status that did not come from
-  the input at all — a background refresh that failed, say.
+- `duration: Number` — milliseconds, after which the status clears itself. Anything that replaces the status cancels a pending expiry first, so a timer from a superseded message can never wipe a newer one.
+- `sticky: Boolean` — keep the status when the query changes. **By default a status is cleared on the next query change**, because it was raised in answer to the query it appeared under. Set this for a status that did not come from the input at all — a background refresh that failed, say.
 
-Errors that are not about the dialog's own input belong in
-`lumine.notifications`, not here. The rule of thumb: if the user can fix it by
-typing something else, it is a `status`; if it needs an action elsewhere, it is
-a notification.
+Errors that are not about the dialog's own input belong in `lumine.notifications`, not here. The rule of thumb: if the user can fix it by typing something else, it is a `status`; if it needs an action elsewhere, it is a notification.
 
 ## Upgrading to 6.0.0
 
-The three independent message props became one line with a precedence, and the
-spinner stopped being optional.
+The three independent message props became one line with a precedence, and the spinner stopped being optional.
 
 - `errorMessage: "…"` → `status: { type: "error", message: "…" }`.
-- `loadingSpinner` is gone — delete it. The spinner always renders with
-  `loadingMessage`, and it replaces the hourglass glyph the stylesheet used to
-  add.
-- Clearing a message by hand on every query change is no longer needed. Drop
-  the `didChangeQuery` handler that did it, or pass `sticky: true` on the
-  statuses that should survive a keystroke.
-- Hand-rolled auto-dismiss — a `setTimeout` that nulls the message — becomes
-  `duration`.
-- `infoMessage` is unchanged, but it is now covered rather than accompanied by
-  a loading or status message.
-- `SelectListView` elements now carry **both** `input-dialog` and `select-list`
-  classes, mirroring the class hierarchy. A stylesheet rule that means dialogs
-  and not lists is written `.input-dialog:not(.select-list)`.
+- `loadingSpinner` is gone — delete it. The spinner always renders with `loadingMessage`, and it replaces the hourglass glyph the stylesheet used to add.
+- Clearing a message by hand on every query change is no longer needed. Drop the `didChangeQuery` handler that did it, or pass `sticky: true` on the statuses that should survive a keystroke.
+- Hand-rolled auto-dismiss — a `setTimeout` that nulls the message — becomes `duration`.
+- `infoMessage` is unchanged, but it is now covered rather than accompanied by a loading or status message.
+- `SelectListView` elements now carry **both** `input-dialog` and `select-list` classes, mirroring the class hierarchy. A stylesheet rule that means dialogs and not lists is written `.input-dialog:not(.select-list)`.
 
 ## Upgrading to 4.0.0
 
-The module now exports the two view classes and nothing else. The standalone
-helpers — `highlightMatches`, `createTwoLineItem`, `createTrailingBlock`,
-`getMatchIndices` and `removeDiacritics` — are gone from the public surface.
+The module now exports the two view classes and nothing else. The standalone helpers — `highlightMatches`, `createTwoLineItem`, `createTrailingBlock`, `getMatchIndices` and `removeDiacritics` — are gone from the public surface.
 
-- `highlightMatches(text, matchIndices)` → `highlight(text)` from the
-  `elementForItem` options. Pass indices as a second argument when they are not
-  the item's own.
-- `createTwoLineItem({...})` → return that same object from `elementForItem`
-  instead of an element.
+- `highlightMatches(text, matchIndices)` → `highlight(text)` from the `elementForItem` options. Pass indices as a second argument when they are not the item's own.
+- `createTwoLineItem({...})` → return that same object from `elementForItem` instead of an element.
 - `removeDiacritics(str)` → `lumine.tools.removeDiacritics(str)`.
-- `getMatchIndices(text, query)` → `options.matchIndices` inside
-  `elementForItem`, or `lumine.tools.fuzzyMatcher` directly outside one.
+- `getMatchIndices(text, query)` → `options.matchIndices` inside `elementForItem`, or `lumine.tools.fuzzyMatcher` directly outside one.
 
 ## API
 
@@ -234,14 +202,11 @@ Initializes the etch scheduler from `lumine.views` if it has not already been co
 
 ### Rendering rows
 
-The module exports the two view classes and nothing else. Everything needed to
-render a row arrives through the `options` argument of `elementForItem`, so there
-is nothing to import and nothing to keep in sync.
+The module exports the two view classes and nothing else. Everything needed to render a row arrives through the `options` argument of `elementForItem`, so there is nothing to import and nothing to keep in sync.
 
 #### Highlighting the query
 
-`options.highlight` wraps the matched characters in `span.character-match`. With
-one argument it uses the item's own match indices:
+`options.highlight` wraps the matched characters in `span.character-match`. With one argument it uses the item's own match indices:
 
 ```js
 elementForItem: (item, { filterKey, highlight }) => {
@@ -251,8 +216,7 @@ elementForItem: (item, { filterKey, highlight }) => {
 };
 ```
 
-Pass indices explicitly when the text you render is not the filter key — for
-example when a row prefixes the matched text and the offsets have to shift:
+Pass indices explicitly when the text you render is not the filter key — for example when a row prefixes the matched text and the offsets have to shift:
 
 ```js
 elementForItem: (item, { matchIndices, highlight }) => {
@@ -267,14 +231,11 @@ elementForItem: (item, { matchIndices, highlight }) => {
 };
 ```
 
-`matchIndices` is a lazy getter, and `highlight` only reads it when called
-without indices — a row that supplies its own never pays for a fuzzy match.
+`matchIndices` is a lazy getter, and `highlight` only reads it when called without indices — a row that supplies its own never pays for a fuzzy match.
 
 #### Two-line rows
 
-Return a descriptor object instead of an element and the row is built for you.
-The `two-lines` class is applied only when there is a secondary line, so the same
-callback can emit both one- and two-line rows:
+Return a descriptor object instead of an element and the row is built for you. The `two-lines` class is applied only when there is a secondary line, so the same callback can emit both one- and two-line rows:
 
 ```js
 elementForItem: (item, { filterKey, highlight }) => ({
@@ -284,10 +245,7 @@ elementForItem: (item, { filterKey, highlight }) => ({
 });
 ```
 
-`primary` and `secondary` take a string or a DOM node. `className` adds class
-names to the item itself, and `trailing` fills a right-hand block on the primary
-line. Trailing entries are DOM nodes, `{text, className}` descriptors, or falsy
-values that are skipped, so conditional content stays inline:
+`primary` and `secondary` take a string or a DOM node. `className` adds class names to the item itself, and `trailing` fills a right-hand block on the primary line. Trailing entries are DOM nodes, `{text, className}` descriptors, or falsy values that are skipped, so conditional content stays inline:
 
 ```js
 elementForItem: (item, { filterKey, highlight }) => ({
@@ -301,9 +259,7 @@ elementForItem: (item, { filterKey, highlight }) => ({
 });
 ```
 
-`didRender(element)` is called with the finished `<li>`, for decoration the
-descriptor cannot express — applying an icon, setting a dataset key. It keeps the
-markup owned by the component while the caller still reaches the result:
+`didRender(element)` is called with the finished `<li>`, for decoration the descriptor cannot express — applying an icon, setting a dataset key. It keeps the markup owned by the component while the caller still reaches the result:
 
 ```js
 elementForItem: (item, { highlight }) => ({
