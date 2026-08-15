@@ -12,6 +12,8 @@ This CommonJS [etch component](https://github.com/lumine-code/etch) provides key
 - **Lazy match indices**: Match positions computed only when accessed.
 - **Diacritics support**: Accent-insensitive matching option.
 - **One message line**: Loading, status, and resting info resolve by precedence, with severities and self-clearing messages.
+- **Recent items**: An id list hoists the rows last used and rules them off from the rest.
+- **Managed query**: Cleared on every open, kept across a flow step, remembered on close, restored on demand.
 - **Dialog base**: `InputDialogView` exposes the modal panel, query editor, and focus behavior for dialogs that are not lists.
 
 ## Installation
@@ -46,6 +48,38 @@ view.update({ status: null }); // back to the resting infoMessage
 
 Errors that are not about the dialog's own input belong in `lumine.notifications`, not here. The rule of thumb: if the user can fix it by typing something else, it is a `status`; if it needs an action elsewhere, it is a notification.
 
+## The query
+
+The query belongs to the dialog, not to the caller. **It is cleared on every fresh show**, so a consumer never calls `reset()` before `show()` — and the several packages that used to were all writing the same line for the same reason.
+
+Two things are deliberately not a fresh show:
+
+- **A modal-flow round trip.** Opening the actions list and coming back is a resume, not an opening; clearing there would throw away the query the action is about to act on.
+- **`preserveQuery: true`.** The query survives every open, and is selected on arrival so the next keystroke still replaces it. For a dialog whose last answer is usually the next one.
+
+Whatever the query was when the dialog closed is remembered, and `select-list:restore-query` (F11) puts it back, selected. That is the on-demand half of `preserveQuery`: the list opens clean, and the previous query is one key away rather than in the way.
+
+## Recent items
+
+`recentIds` is an array of item identifiers, most recently used first, resolved through the same `idForItem` as `separatorIds`. While the query is empty the list hoists those items to the top in that order and draws its own separator under them; under a query the rows are ranked by score and neither happens, because reordering a search result would be overriding the answer the user asked for.
+
+```js
+this.selectList.update({ items: this.items, recentIds: this.recentlyUsed });
+```
+
+The list orders and marks; it stores nothing. How many entries to keep, when to record one, and whether they survive a restart stay with the package, which is the only side that knows what its items are:
+
+```js
+recordRecent(item) {
+  const index = this.recentlyUsed.indexOf(item.aPath);
+  if (index !== -1) this.recentlyUsed.splice(index, 1);
+  this.recentlyUsed.unshift(item.aPath);
+  this.recentlyUsed.length = Math.min(this.recentlyUsed.length, this.recentCount);
+}
+```
+
+An id in `recentIds` that no longer matches an item is ignored, so a list never has to prune entries against its own contents before handing them over.
+
 ## Upgrading to 6.0.0
 
 The three independent message props became one line with a precedence, and the spinner stopped being optional.
@@ -56,6 +90,9 @@ The three independent message props became one line with a precedence, and the s
 - Hand-rolled auto-dismiss — a `setTimeout` that nulls the message — becomes `duration`.
 - `infoMessage` is unchanged, but it is now covered rather than accompanied by a loading or status message.
 - `SelectListView` elements now carry **both** `input-dialog` and `select-list` classes, mirroring the class hierarchy. A stylesheet rule that means dialogs and not lists is written `.input-dialog:not(.select-list)`.
+- The query is cleared on every show. Delete the `reset()` call before `show()`, and the config or flag that decided whether to make it — `preserveQuery: true` is the whole of the opt-out, and F11 covers the case that motivated most of those flags.
+- Hand-rolled recent sections — an `order` that hoists recents while the query is empty plus a `separatorIds` computed from the first non-recent item — become `recentIds`. Keep the storage, delete the ordering.
+- The item-actions list is grouped. An action that acts on the list rather than the selected row declares `actionScope: "list"` where it is registered; everything else is unchanged.
 
 ## Upgrading to 4.0.0
 
@@ -106,6 +143,8 @@ When creating a new instance of a select list, or when calling `update` on an ex
 - `status: Object|null`: the episodic message — see [The message line](#the-message-line).
 - `itemsClassList: [String]`: an array of strings that will be added as class names to the items element.
 - `separatorIds: [String|Number]`: item identifiers before which the list inserts a standalone `li.select-list-separator` with `role="separator"`. Separators are list chrome: they are not selectable, filterable, counted by `maxResults`, or passed to consumer callbacks. Object items use their `id` property by default; primitive items identify themselves.
+- `recentIds: [String|Number]`: item identifiers, most recently used first — see [Recent items](#recent-items).
+- `preserveQuery: Boolean`: keep the query across opens instead of clearing it — see [The query](#the-query).
 - `idForItem: (item: Object) -> String|Number`: returns the stable identifier compared with `separatorIds`, overriding the default described above.
 - `contentElement: HTMLElement`: a caller-owned DOM element rendered below the list and messages. Interactive elements inside it (`input`, `textarea`, `select`, `button`, `a[href]`, `[tabindex]`, `lumine-text-editor`) can receive focus and clicks; anywhere else keeps focus in the query editor.
 - `initialSelectionIndex: Number`: the index of the item to initially select; defaults to `0`, or to no selection at all when `allowEmptySelection` is set.
@@ -124,6 +163,8 @@ By default, the component registers these commands on its element:
 - `core:move-to-top` / `core:move-to-bottom`: Jump to first/last item
 - `core:confirm`: Confirm selection
 - `core:cancel`: Cancel selection
+- `select-list:actions`: Show the item-actions list (F12)
+- `select-list:restore-query`: Put back the query the dialog was last closed with (F11)
 
 #### Callbacks
 
@@ -160,12 +201,32 @@ By default, the component registers these commands on its element:
 Defined on `InputDialogView`, so every select list _and_ every dialog offers them.
 
 - `showItemActions()`: Shows the item-actions list as a modal-flow step (crumb "Actions") — the commands the dialog itself contributes, in the package's own namespace (`fuzzy-files:open`), with the label, description, and keybindings each carries in the command registry and keymaps, rendered command-palette style. Bound to F12 as `select-list:actions`; F12 pressed in the actions list itself goes back, so the key toggles. Confirming a row — or pressing an action's own keybinding right in the actions list, which wears the master's classes so the package keymap applies there untouched — returns to the master first and then dispatches the command, exactly as if the keystroke was pressed there. A package only has to register its commands with a `description` for the rows to explain themselves; nothing is declared twice.
-- `itemActions()`: Returns the derived action descriptors (`{name, description, command, keystrokes}`).
+- `itemActions()`: Returns the derived action descriptors (`{name, description, command, keystrokes, scope}`).
+- `groupItemActions(actions)`: Returns `{items, separatorIds}` — the actions in display order with the group boundary marked.
+
+An action is about the **selected row** or about the **list**: "open this file in a split" against "index the project again". The list shows the row actions first, then a separator, then the list actions, so the group a row belongs to is legible without reading it. A package declares the second kind where it registers the command:
+
+```js
+lumine.commands.add(this.selectList.element, {
+  "fuzzy-files:split-right": {
+    description: "Open the file in a pane to the right",
+    didDispatch: () => this.performAction("split-right"),
+  },
+  "fuzzy-files:refresh-index": {
+    description: "Scan the project again and rebuild the index",
+    actionScope: "list",
+    didDispatch: () => this.refresh(),
+  },
+});
+```
+
+`"item"` is the default, since most actions are one. The command registry keeps any key it does not recognise, so this needs nothing from the editor. The separator is drawn only while the actions list is unfiltered — under a query the two groups interleave by score, and a line anywhere in that would be meaningless.
 
 #### Other methods
 
 - `focus()`: Focuses the query editor.
-- `reset()`: Clears the query editor text.
+- `reset()`: Clears the query editor text. Rarely needed — the query is cleared on every show.
+- `restoreQuery()`: Puts back the query the dialog was last closed with, selected. Returns `false` when there was none.
 - `destroy()`: Disposes of the component and cleans up resources.
 - `update(props)`: Updates the component with new props.
 - `getQuery()`: Returns the current query string.
@@ -322,6 +383,7 @@ class MyFileList {
 - `contentElement: HTMLElement`: a caller-owned DOM element rendered **below** the messages.
 - `checkboxes: [{ label, config?, checked?, onChange? }]`: a row of checkboxes rendered below the messages. A checkbox with a `config` key is bound to `lumine.config`: it reflects the current value, writes on toggle (propagating to every renderer), and re-renders on external change. Without `config` it keeps local state seeded from `checked`. `onChange(checked)` is called on every toggle. Toggling returns focus to the query editor so Enter still confirms.
 - `query: String` / `selectQuery: Boolean`: control the query editor content and selection via `update`.
+- `preserveQuery: Boolean`: as on `SelectListView` — see [The query](#the-query).
 - `filterQuery: (query: String) -> String`: a transformation applied to the query before it is passed to `didChangeQuery`.
 - `emptyMessage` is not supported (there is no list); `infoMessage`, `loadingMessage`, `loadingBadge`, and `status` behave as on `SelectListView` — see [The message line](#the-message-line).
 - `panelItem`, `skipCommandsRegistration`, `crumb`: as on `SelectListView`.
