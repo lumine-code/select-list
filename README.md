@@ -251,15 +251,11 @@ lumine.commands.add(this.selectList.element, {
 
 #### `SelectListView.setScheduler(scheduler)`
 
-Sets the etch scheduler used by the component. The component initializes this to `lumine.views` automatically when possible.
+Overrides the etch scheduler used by the component. The package points its own copy of etch at `lumine.views` when it loads inside the editor, so this is needed only to pin a scheduler of your own — a fake one in a test, say. It has to go through here because this package resolves its own copy of etch, which a caller holding a different copy cannot otherwise reach.
 
 #### `SelectListView.getScheduler()`
 
 Returns the current etch scheduler.
-
-#### `SelectListView.initializeScheduler()`
-
-Initializes the etch scheduler from `lumine.views` if it has not already been configured.
 
 ### Rendering rows
 
