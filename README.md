@@ -175,7 +175,7 @@ By default, the component registers these commands on its element:
 - `didCancelSelection: () -> Void`: called when the user presses Esc or the list loses focus.
 - `willShow: () -> Void`: called whenever the panel becomes visible — a plain `show()`, a modal-flow step change, or a back navigation re-showing the list — useful for data preparation.
 - `crumb: String`: the label this list carries on the workspace's modal breadcrumb trail, used when it is shown as a flow step without an explicit label and when a step shown on top of it adopts it as the trail root.
-- `actionsFilter: (descriptor) -> Boolean`: which of the dialog's own commands the item-actions list offers. Defaults to everything the dialog contributes minus `core:*` and the built-in chrome commands.
+- `actionsFilter: (descriptor) -> Boolean`: narrows which of the dialog's own commands the item-actions list offers. `core:*` and the built-in chrome commands are excluded whatever it returns. The list is rebuilt on every F12 with the selection already made, so a predicate that reads the selected item lists an action only for the rows it applies to.
 - `skipItemActions: Boolean`: opt this list out of the item-actions list entirely.
 
 `SelectListView` overrides `confirm()`/`cancel()` to route to `confirmSelection()`/`cancelSelection()`, so the base `didConfirm`/`didCancel` callbacks never fire on a select list. Use the `*Selection` callbacks above; `didConfirm`/`didCancel` are for `InputDialogView`.
