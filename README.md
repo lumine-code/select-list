@@ -157,6 +157,8 @@ When creating a new instance of a select list, or when calling `update` on an ex
 
 ### Registered commands
 
+Mouse navigation follows the editor's list convention: left-click confirms a row, middle-click selects it without confirming, and right-click selects it and opens its Actions.
+
 By default, the component registers these commands on its element:
 
 - `core:move-up` / `core:move-down`: Navigate items
