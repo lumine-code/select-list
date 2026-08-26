@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "@lumine-code/etch": "github:lumine-code/etch#df06b3fca2ec49b1d6b76cb8af3e9f5015a2612c",
-    "@lumine-code/underscore-plus": "github:lumine-code/underscore-plus#3dcac0046d9ff5a3b42f3d83b997112ab38cd705"
+    "@lumine-code/underscore-plus": "github:lumine-code/underscore-plus#7abe38681700c81e6e69a53fbd2c9fd2835ff066"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
