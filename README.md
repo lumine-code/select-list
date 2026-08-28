@@ -57,7 +57,7 @@ Two things are deliberately not a fresh show:
 - **A modal-flow round trip.** Opening the actions list and coming back is a resume, not an opening; clearing there would throw away the query the action is about to act on.
 - **`preserveQuery: true`.** The query survives every open, and is selected on arrival so the next keystroke still replaces it. For a dialog whose last answer is usually the next one.
 
-Whatever the query was when the dialog closed is remembered, and `select-list:restore-query` (F11) puts it back, selected. That is the on-demand half of `preserveQuery`: the list opens clean, and the previous query is one key away rather than in the way.
+Whatever the query was when the dialog closed is remembered, and `select-list:restore-query` puts it back, selected. That is the on-demand half of `preserveQuery`: the list opens clean, and the previous query stays available without being in the way.
 
 ## Recent items
 
@@ -90,7 +90,7 @@ The three independent message props became one line with a precedence, and the s
 - Hand-rolled auto-dismiss — a `setTimeout` that nulls the message — becomes `duration`.
 - `infoMessage` is unchanged, but it is now covered rather than accompanied by a loading or status message.
 - `SelectListView` elements now carry **both** `input-dialog` and `select-list` classes, mirroring the class hierarchy. A stylesheet rule that means dialogs and not lists is written `.input-dialog:not(.select-list)`.
-- The query is cleared on every show. Delete the `reset()` call before `show()`, and the config or flag that decided whether to make it — `preserveQuery: true` is the whole of the opt-out, and F11 covers the case that motivated most of those flags.
+- The query is cleared on every show. Delete the `reset()` call before `show()`, and the config or flag that decided whether to make it — `preserveQuery: true` is the whole of the opt-out, and `select-list:restore-query` covers the case that motivated most of those flags.
 - Hand-rolled recent sections — an `order` that hoists recents while the query is empty plus a `separatorIds` computed from the first non-recent item — become `recentIds`. Keep the storage, delete the ordering.
 - The item-actions list is grouped. An action that acts on the list rather than the selected row declares `actionScope: "list"` where it is registered; everything else is unchanged.
 
@@ -165,19 +165,19 @@ By default, the component registers these commands on its element:
 - `core:move-to-top` / `core:move-to-bottom`: Jump to first/last item
 - `core:confirm`: Confirm selection
 - `core:cancel`: Cancel selection
-- `select-list:actions`: Show the item-actions list (F12)
-- `select-list:restore-query`: Put back the query the dialog was last closed with (F11)
+- `select-list:actions`: Show the item-actions list
+- `select-list:restore-query`: Put back the query the dialog was last closed with
 
 #### Callbacks
 
 - `didChangeQuery: (query: String) -> Void`: called when the query changes.
 - `didChangeSelection: (item: Object) -> Void`: called when the selected item changes.
-- `didConfirmSelection: (item: Object) -> Void`: called when the user clicks or presses Enter on an item.
-- `didConfirmEmptySelection: () -> Void`: called when the user presses Enter but the list is empty.
-- `didCancelSelection: () -> Void`: called when the user presses Esc or the list loses focus.
+- `didConfirmSelection: (item: Object) -> Void`: called when the user confirms an item, whether through `core:confirm` or a click.
+- `didConfirmEmptySelection: () -> Void`: called when `core:confirm` is dispatched while the list is empty.
+- `didCancelSelection: () -> Void`: called when `core:cancel` is dispatched or the list loses focus.
 - `willShow: () -> Void`: called whenever the panel becomes visible — a plain `show()`, a modal-flow step change, or a back navigation re-showing the list — useful for data preparation.
 - `crumb: String`: the label this list carries on the workspace's modal breadcrumb trail, used when it is shown as a flow step without an explicit label and when a step shown on top of it adopts it as the trail root.
-- `actionsFilter: (descriptor) -> Boolean`: narrows which of the dialog's own commands the item-actions list offers. `core:*` and the built-in chrome commands are excluded whatever it returns. The list is rebuilt on every F12 with the selection already made, so a predicate that reads the selected item lists an action only for the rows it applies to.
+- `actionsFilter: (descriptor) -> Boolean`: narrows which of the dialog's own commands the item-actions list offers. `core:*` and the built-in chrome commands are excluded whatever it returns. The list is rebuilt every time it opens with the selection already made, so a predicate that reads the selected item lists an action only for the rows it applies to.
 - `skipItemActions: Boolean`: opt this list out of the item-actions list entirely.
 
 `SelectListView` overrides `confirm()`/`cancel()` to route to `confirmSelection()`/`cancelSelection()`, so the base `didConfirm`/`didCancel` callbacks never fire on a select list. Use the `*Selection` callbacks above; `didConfirm`/`didCancel` are for `InputDialogView`.
@@ -192,7 +192,7 @@ By default, the component registers these commands on its element:
 
 #### Panel management
 
-- `show(options?)`: Shows the select list as a modal panel and focuses the query editor, running `willShow` first. Passing `{crumb: "Label"}` (or `crumb: true` to use the `crumb` prop) shows it as a step of the workspace's modal flow instead: the modal visible at that moment becomes the previous breadcrumb entry, and Shift-Escape or a click on an earlier crumb returns to it with its state intact. Escape still cancels the visible step, which ends the whole trail. The show side effects run whenever the panel becomes visible, whoever shows it.
+- `show(options?)`: Shows the select list as a modal panel and focuses the query editor, running `willShow` first. Passing `{crumb: "Label"}` (or `crumb: true` to use the `crumb` prop) shows it as a step of the workspace's modal flow instead: the modal visible at that moment becomes the previous breadcrumb entry, and going back through the flow or clicking an earlier crumb returns to it with its state intact. Cancelling the visible step ends the whole trail. The show side effects run whenever the panel becomes visible, whoever shows it.
 - `hide()`: Hides the panel and restores focus to the previously focused element.
 - `toggle()`: Toggles the visibility of the panel.
 - `isVisible()`: Returns `true` if the panel is currently visible.
@@ -202,7 +202,7 @@ By default, the component registers these commands on its element:
 
 Defined on `InputDialogView`, so every select list _and_ every dialog offers them.
 
-- `showItemActions()`: Shows the item-actions list as a modal-flow step (crumb "Actions") — the commands the dialog itself contributes, in the package's own namespace (`fuzzy-files:open`), with the label, description, and keybindings each carries in the command registry and keymaps, rendered command-palette style. While at least one action is available, an ellipsis button in the query editor opens the list; F12 invokes the same `select-list:actions` command, and F12 pressed in the actions list itself goes back, so the key toggles. Confirming a row — or pressing an action's own keybinding right in the actions list, which wears the master's classes so the package keymap applies there untouched — returns to the master first and then dispatches the command, exactly as if the keystroke was pressed there. A package only has to register its commands with a `description` for the rows to explain themselves; nothing is declared twice.
+- `showItemActions()`: Shows the item-actions list as a modal-flow step (crumb "Actions") — the commands the dialog itself contributes, in the package's own namespace (`fuzzy-files:open`), with the label, description, and keybindings each carries in the command registry and keymaps, rendered command-palette style. While at least one action is available, an ellipsis button in the query editor opens the list; `select-list:actions` opens it from the master and returns from the actions list, so the command toggles between them. Confirming a row — or dispatching one of the action commands from within the actions list, which wears the master's classes so the package keymap applies there untouched — returns to the master first and then dispatches the command, exactly as if it were invoked there. A package only has to register its commands with a `description` for the rows to explain themselves; nothing is declared twice.
 - `itemActions()`: Returns the derived action descriptors (`{name, description, command, keystrokes, scope}`).
 - `groupItemActions(actions)`: Returns `{items, separatorIds}` — the actions in display order with the group boundary marked.
 
@@ -379,7 +379,7 @@ class MyFileList {
 - `placeholderText: String`: placeholder text for the query editor.
 - `headerElement: HTMLElement`: a caller-owned DOM element rendered **above** the query editor (e.g. an icon prompt label).
 - `contentElement: HTMLElement`: a caller-owned DOM element rendered **below** the messages.
-- `checkboxes: [{ label, config?, checked?, onChange? }]`: a row of checkboxes rendered below the messages. A checkbox with a `config` key is bound to `lumine.config`: it reflects the current value, writes on toggle (propagating to every renderer), and re-renders on external change. Without `config` it keeps local state seeded from `checked`. `onChange(checked)` is called on every toggle. Toggling returns focus to the query editor so Enter still confirms.
+- `checkboxes: [{ label, config?, checked?, onChange? }]`: a row of checkboxes rendered below the messages. A checkbox with a `config` key is bound to `lumine.config`: it reflects the current value, writes on toggle (propagating to every renderer), and re-renders on external change. Without `config` it keeps local state seeded from `checked`. `onChange(checked)` is called on every toggle. Toggling returns focus to the query editor so confirmation still acts on the dialog.
 - `query: String` / `selectQuery: Boolean`: control the query editor content and selection via `update`.
 - `preserveQuery: Boolean`: as on `SelectListView` — see [The query](#the-query).
 - `filterQuery: (query: String) -> String`: a transformation applied to the query before it is passed to `didChangeQuery`.
