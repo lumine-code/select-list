@@ -111,7 +111,7 @@ When creating a new instance of a select list, or when calling `update` on an ex
 
 #### Required
 
-- `elementForItem: (item: Object, options: Object) -> HTMLElement|Object`: a function that is called whenever an item needs to be displayed. Return an `HTMLElement` to render it as-is, or a plain descriptor object to have a two-line row built for you — see [Rendering rows](#rendering-rows). `options.document` is the current modal surface's document; create custom row DOM through it so a reusable list remains native to whichever window shows it.
+- `elementForItem: (item: Object, options: Object) -> HTMLElement|Object`: a function that is called whenever an item needs to be displayed. Return an `HTMLElement` to render it as-is, or a plain descriptor object to have a two-line row built for you — see [Rendering rows](#rendering-rows). `options.document` is the document that owns the dialog; create custom row DOM through it so rows stay in the correct browser realm even when the request originated in another window.
   - `options: Object`:
     - `selected: Boolean`: indicating whether item is selected or not.
     - `index: Number`: item's index.
@@ -152,6 +152,7 @@ When creating a new instance of a select list, or when calling `update` on an ex
 - `initiallyVisibleItemCount: Number`: render only the first N items eagerly; items beyond that count get `visible: false` in `elementForItem` and are re-rendered when scrolled into view (via `IntersectionObserver`). Useful for very long lists with expensive item rendering. Constructor-only — cannot be changed via `update`.
 - `placeholderText: String`: placeholder text to display in the query editor when empty.
 - `panelItem: Object`: the item passed to `lumine.workspace.addModalPanel` (defaults to the select list itself). Useful when a wrapper view should be exposed as `panel.item`; the object must have an `element` property. Constructor-only.
+- `owner: Object`: an optional pane item passed to `lumine.workspace.addModalPanel` as the dialog's logical lifecycle context. It does not choose where the modal appears; workspace modals are always presented by the primary window. Constructor-only.
 - `skipCommandsRegistration: Boolean`: when `true`, skips registering default keyboard commands.
 - `headerElement: HTMLElement` and `checkboxes: [Object]` are inherited from `InputDialogView` and work here too; see [InputDialogView](#inputdialogview) for their shape.
 
@@ -194,11 +195,11 @@ By default, the component registers these commands on its element:
 
 #### Panel management
 
-- `show(options?)`: Shows the select list as a modal panel and focuses the query editor, running `willShow` first. Passing `{owner}` routes that show to the pane item's current native-window surface, while `{surface}` chooses one registered surface directly; an unpinned list follows the active workspace surface. A constructor-level route is fixed and cannot be overridden per show. Passing `{crumb: "Label"}` (or `crumb: true` to use the `crumb` prop) shows it as a step of that surface's modal flow instead: the modal visible at that moment becomes the previous breadcrumb entry, and going back through the flow or clicking an earlier crumb returns to it with its state intact. Cancelling the visible step ends the whole trail. The show side effects run whenever the panel becomes visible, whoever shows it.
+- `show(options?)`: Shows the select list in the primary workspace's modal container and focuses the query editor, running `willShow` first. Passing `{crumb: "Label"}` (or `crumb: true` to use the `crumb` prop) shows it as a step of the workspace's modal flow instead: the modal visible at that moment becomes the previous breadcrumb entry, and going back through the flow or clicking an earlier crumb returns to it with its state intact. Cancelling the visible step ends the whole trail. The show side effects run whenever the panel becomes visible, whoever shows it.
 - `hide()`: Hides the panel and restores focus to the previously focused element.
-- `toggle(options?)`: Toggles the visibility of the panel and accepts the same one-show route when opening it.
+- `toggle(options?)`: Toggles the visibility of the panel and accepts the same `{crumb}` option when opening it.
 - `isVisible()`: Returns `true` if the panel is currently visible.
-- `getPanel()`: Returns the stable modal `Panel` hosting the select list, creating it hidden on first access. The same panel object is moved between native-window modal containers as the list is shown, so subscriptions made through it remain valid.
+- `getPanel()`: Returns the stable modal `Panel` hosting the select list in the primary workspace, creating it hidden on first access. Repeated shows keep the same panel object, so subscriptions made through it remain valid.
 
 #### Item actions
 
@@ -386,7 +387,7 @@ class MyFileList {
 - `preserveQuery: Boolean`: as on `SelectListView` — see [The query](#the-query).
 - `filterQuery: (query: String) -> String`: a transformation applied to the query before it is passed to `didChangeQuery`.
 - `emptyMessage` is not supported (there is no list); `infoMessage`, `loadingMessage`, `loadingBadge`, and `status` behave as on `SelectListView` — see [The message line](#the-message-line).
-- `panelItem`, `skipCommandsRegistration`, `crumb`: as on `SelectListView`.
+- `panelItem`, `owner`, `skipCommandsRegistration`, `crumb`: as on `SelectListView`.
 
 Interactive controls anywhere in the dialog (checkboxes, buttons, links, inputs inside `contentElement`) receive focus and clicks normally; clicking non-interactive chrome keeps focus in the query editor.
 
@@ -399,7 +400,7 @@ Interactive controls anywhere in the dialog (checkboxes, buttons, links, inputs 
 
 ### Methods
 
-Panel and query management match `SelectListView`: `show(options?)` (including the `{crumb}` modal-flow form and one-show `{owner}` or `{surface}` route), `hide()`, `toggle(options?)`, `isVisible()`, `getPanel()`, `focus()`, `reset()`, `destroy()`, `update(props)`, `getQuery()`, `getFilterQuery()`, `setQueryFromSelection()`, plus `confirm()` and `cancel()` to trigger the callbacks programmatically. A constructor-level `owner` follows that pane item between surfaces, a constructor-level `surface` stays fixed, and an unpinned dialog follows the active surface on every explicit show; show-level routing never overrides a constructor-level route. `refs.queryEditor` exposes the underlying `TextEditor`.
+Panel and query management match `SelectListView`: `show(options?)` (including the `{crumb}` modal-flow form), `hide()`, `toggle(options?)`, `isVisible()`, `getPanel()`, `focus()`, `reset()`, `destroy()`, `update(props)`, `getQuery()`, `getFilterQuery()`, `setQueryFromSelection()`, plus `confirm()` and `cancel()` to trigger the callbacks programmatically. The modal is always presented by the primary workspace; a constructor-level `owner` is only its logical lifecycle context. `refs.queryEditor` exposes the underlying `TextEditor`.
 
 ### Dialog example
 
