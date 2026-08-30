@@ -111,7 +111,7 @@ When creating a new instance of a select list, or when calling `update` on an ex
 
 #### Required
 
-- `elementForItem: (item: Object, options: Object) -> HTMLElement|Object`: a function that is called whenever an item needs to be displayed. Return an `HTMLElement` to render it as-is, or a plain descriptor object to have a two-line row built for you — see [Rendering rows](#rendering-rows).
+- `elementForItem: (item: Object, options: Object) -> HTMLElement|Object`: a function that is called whenever an item needs to be displayed. Return an `HTMLElement` to render it as-is, or a plain descriptor object to have a two-line row built for you — see [Rendering rows](#rendering-rows). `options.document` is the current modal surface's document; create custom row DOM through it so a reusable list remains native to whichever window shows it.
   - `options: Object`:
     - `selected: Boolean`: indicating whether item is selected or not.
     - `index: Number`: item's index.
@@ -194,11 +194,11 @@ By default, the component registers these commands on its element:
 
 #### Panel management
 
-- `show(options?)`: Shows the select list as a modal panel and focuses the query editor, running `willShow` first. Passing `{crumb: "Label"}` (or `crumb: true` to use the `crumb` prop) shows it as a step of the workspace's modal flow instead: the modal visible at that moment becomes the previous breadcrumb entry, and going back through the flow or clicking an earlier crumb returns to it with its state intact. Cancelling the visible step ends the whole trail. The show side effects run whenever the panel becomes visible, whoever shows it.
+- `show(options?)`: Shows the select list as a modal panel and focuses the query editor, running `willShow` first. Passing `{owner}` routes that show to the pane item's current native-window surface, while `{surface}` chooses one registered surface directly; an unpinned list follows the active workspace surface. A constructor-level route is fixed and cannot be overridden per show. Passing `{crumb: "Label"}` (or `crumb: true` to use the `crumb` prop) shows it as a step of that surface's modal flow instead: the modal visible at that moment becomes the previous breadcrumb entry, and going back through the flow or clicking an earlier crumb returns to it with its state intact. Cancelling the visible step ends the whole trail. The show side effects run whenever the panel becomes visible, whoever shows it.
 - `hide()`: Hides the panel and restores focus to the previously focused element.
-- `toggle()`: Toggles the visibility of the panel.
+- `toggle(options?)`: Toggles the visibility of the panel and accepts the same one-show route when opening it.
 - `isVisible()`: Returns `true` if the panel is currently visible.
-- `getPanel()`: Returns the modal panel hosting the select list, creating it hidden on first access.
+- `getPanel()`: Returns the stable modal `Panel` hosting the select list, creating it hidden on first access. The same panel object is moved between native-window modal containers as the list is shown, so subscriptions made through it remain valid.
 
 #### Item actions
 
@@ -270,7 +270,7 @@ The module exports the two view classes and nothing else. Everything needed to r
 `options.highlight` wraps the matched characters in `span.character-match`. With one argument it uses the item's own match indices:
 
 ```js
-elementForItem: (item, { filterKey, highlight }) => {
+elementForItem: (item, { filterKey, highlight, document }) => {
   const li = document.createElement("li");
   li.appendChild(highlight(filterKey));
   return li;
@@ -280,7 +280,7 @@ elementForItem: (item, { filterKey, highlight }) => {
 Pass indices explicitly when the text you render is not the filter key — for example when a row prefixes the matched text and the offsets have to shift:
 
 ```js
-elementForItem: (item, { matchIndices, highlight }) => {
+elementForItem: (item, { matchIndices, highlight, document }) => {
   const li = document.createElement("li");
   li.appendChild(
     highlight(
@@ -346,7 +346,7 @@ class MyFileList {
       willShow: () => {
         this.loadFiles();
       },
-      elementForItem: (item, { filterKey, highlight }) => {
+      elementForItem: (item, { filterKey, highlight, document }) => {
         const li = document.createElement("li");
         li.appendChild(highlight(filterKey));
         return li;
@@ -399,7 +399,7 @@ Interactive controls anywhere in the dialog (checkboxes, buttons, links, inputs 
 
 ### Methods
 
-Panel and query management match `SelectListView`: `show(options?)` (including the `{crumb}` modal-flow form), `hide()`, `toggle()`, `isVisible()`, `getPanel()`, `focus()`, `reset()`, `destroy()`, `update(props)`, `getQuery()`, `getFilterQuery()`, `setQueryFromSelection()`, plus `confirm()` and `cancel()` to trigger the callbacks programmatically. `refs.queryEditor` exposes the underlying `TextEditor`.
+Panel and query management match `SelectListView`: `show(options?)` (including the `{crumb}` modal-flow form and one-show `{owner}` or `{surface}` route), `hide()`, `toggle(options?)`, `isVisible()`, `getPanel()`, `focus()`, `reset()`, `destroy()`, `update(props)`, `getQuery()`, `getFilterQuery()`, `setQueryFromSelection()`, plus `confirm()` and `cancel()` to trigger the callbacks programmatically. A constructor-level `owner` follows that pane item between surfaces, a constructor-level `surface` stays fixed, and an unpinned dialog follows the active surface on every explicit show; show-level routing never overrides a constructor-level route. `refs.queryEditor` exposes the underlying `TextEditor`.
 
 ### Dialog example
 
