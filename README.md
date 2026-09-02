@@ -2,6 +2,9 @@
 
 Provides a fuzzy-searchable select-list and modal panel component.
 
+> [!WARNING]
+> **This package is deprecated.** Its source now lives inside the [Lumine editor](https://github.com/lumine-code/lumine) as part of Lumine core and is no longer maintained as a standalone package. This repository is archived and no longer receives updates.
+
 This CommonJS [etch component](https://github.com/lumine-code/etch) provides keyboard and mouse navigation with built-in panel management. It is derived from Atom's [select-list](https://github.com/atom/select-list) and is maintained for Lumine's editor runtime.
 
 ## Features
